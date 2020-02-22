@@ -27,7 +27,6 @@ def apiCheckLimit():
     global lastMinute
     now = datetime.datetime.now()
     #takes current time
-    print(apiChecks)
     currentMinute = [int(now.year), int(now.month), int(now.day),int(now.hour),int(now.minute),int(now.second)]
     #sees if API has been called at all
     if lastMinute == True:
@@ -35,7 +34,7 @@ def apiCheckLimit():
         lastMinute = [int(now.year), int(now.month), int(now.day),int(now.hour),int(now.minute),int(now.second)]
         return
     #checks if it has been longer than a minute since last API call, if it has reset apiChecks since limit is back to 0
-    if lastMinute[0]<currentMinute[0] or lastMinute[1]<currentMinute[1] or lastMinute[2]<currentMinute[2] or lastMinute[3]<currentMinute[3] or lastMinute[4]+2<currentMinute[4] or (lastMinute[4]+1<=currentMinute[4] and lastMinute[5]<currentMinute[5]):
+    if lastMinute[0]<currentMinute[0] or lastMinute[1]<currentMinute[1] or lastMinute[2]<currentMinute[2] or lastMinute[3]<currentMinute[3] or lastMinute[4]+2<currentMinute[4] or (lastMinute[4]+1<=currentMinute[4] and lastMinute[5]<currentMinute[5]+1):
         apiChecks = 0
         lastMinute = currentMinute
     apiChecks = apiChecks + 1
@@ -98,15 +97,18 @@ async def on_message(message):
             sendstring = (sendstring + " " + state + " " + "\n")
         await message.channel.send(sendstring + '```')
         #prints faction inactives
-    elif message.content == '!inactives':
-        await message.channel.send('Please wait, generating list.')
-        inactives = []
-        getData = requests.get('https://api.torn.com/faction/?selections=basic&key=%s' % (apiKey))
+    elif message.content[0:10] == '!inactives':
+        factionid = ""
+        if message.content[10:len(message.content)]:
+            factionid = message.content[10:len(message.content)]
+        r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % (apiKey))
         apiCheckLimit()
-        dataAsText = getData.text
-        data = json.loads(dataAsText)
-        members = data["members"]
-        print('inactives')
+        parsedJSON = json.loads(r.text)
+        # checks if faction exists
+        if parsedJSON['best_chain'] == 0:
+            await message.channel.send('Error: Invalid Faction ID')
+            return
+        members = parsedJSON["members"]
         for tornid in members:
             getData = requests.get('https://api.torn.com/user/' + tornid + '?selections=profile&key=%s' % (apiKey))
             apiCheckLimit()
@@ -122,6 +124,41 @@ async def on_message(message):
         for state in inactives:
             sendstring = (sendstring + " " + state + " " + "\n")
         await message.channel.send(sendstring + "```")
+    elif message.content[0:8] == "!donator":
+        factionid = ""
+        if message.content[8:len(message.content)]:
+            factionid = message.content[8:len(message.content)]
+        r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % (apiKey))
+        apiCheckLimit()
+        parsedJSON = json.loads(r.text)
+        # checks if faction exists
+        if parsedJSON['best_chain'] == 0:
+            await message.channel.send('Error: Invalid Faction ID')
+            return
+        await message.channel.send('Please wait, generating list.')
+        members = parsedJSON["members"]
+        donators=[]
+        for tornid in members:
+            donator = False
+            property = False
+            getData = requests.get('https://api.torn.com/user/' + tornid + '?selections=profile&key=%s' % (apiKey))
+            apiCheckLimit()
+            data = json.loads(getData.text)
+            playerName = data["name"]
+            propstring = ""
+            donatestring = ""
+            if data["donator"] == 0:
+                donator = True
+                donatestring = (" Donator - False")
+            if data["property"] != "Private Island":
+                property = True
+                propstring = (" Property - "+data["property"])
+            if donator == True or property == True:
+                donators.append(playerName+": "+donatestring+" "+propstring)
+        sendstring = "Players without Donator Status or PI: \n ```"
+        for string in donators:
+            sendstring = (sendstring + " " + string + " " + "\n")
+        await message.channel.send(sendstring+"```")
 
 
 
