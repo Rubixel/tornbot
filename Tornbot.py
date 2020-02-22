@@ -1,44 +1,79 @@
+#imports
 import discord
 import json
 import requests
+import time
+import datetime
 
+#botinfo
 client = discord.Client()
-version = "1.0.0"
-prefix = '!?'
-
+#apikey
 apiKey = 'SmKfloSmgSDgHZ6e'
 
+#Stuff to prevent API key being used >100 times.
+startTime = time.time()
+now = datetime.datetime.now()
+startTime = now
+global apiLimit
+global apiChecks
+apiLimit = 85
+apiChecks = 0
+lastMinute = True
+
+#Limit API use function
+def apiCheckLimit():
+    global apiLimit
+    global apiChecks
+    global lastMinute
+    now = datetime.datetime.now()
+    #takes current time
+    print(apiChecks)
+    currentMinute = [int(now.year), int(now.month), int(now.day),int(now.hour),int(now.minute),int(now.second)]
+    #sees if API has been called at all
+    if lastMinute == True:
+        now = datetime.datetime.now()
+        lastMinute = [int(now.year), int(now.month), int(now.day),int(now.hour),int(now.minute),int(now.second)]
+        return
+    #checks if it has been longer than a minute since last API call, if it has reset apiChecks since limit is back to 0
+    if lastMinute[0]<currentMinute[0] or lastMinute[1]<currentMinute[1] or lastMinute[2]<currentMinute[2] or lastMinute[3]<currentMinute[3] or lastMinute[4]+2<currentMinute[4] or (lastMinute[4]+1<=currentMinute[4] and lastMinute[5]<currentMinute[5]):
+        apiChecks = 0
+        lastMinute = currentMinute
+    apiChecks = apiChecks + 1
+    #if too many calls make program sleep to refresh the limit
+    if apiChecks >= apiLimit:
+        print("Sleeping: 60s")
+        time.sleep(60)
+
+
 @client.event
+#onbotload
 async def on_ready():
-    print('We have logged in as {0.user}'.format(client))
-    print('Bot is currently running version ' + version + ' with the prefix: ' + prefix)
     print("Program is ready.")
 
-
 @client.event
+#whenever a message is sent
 async def on_message(message):
+    #ignore own messages
     if message.author == client.user:
         return
+    #checks a player for info
     if message.content == "!torn":
         r = requests.get('https://api.torn.com/user/?selections=basic&key=%s' % (apiKey))
+        apiCheckLimit()
         info = json.loads(r.text)
         tornmessage = (info['name'] + " is a " + str(info['level']))
         await message.channel.send(
             info['name'] + " is a level " + str(info['level']) + " " + info['gender'] + ". Currently, they are " +
             info['status']['description'] + '.')
-
+    #all faction onliners last 5 mins
     elif message.content[0:9] == '!onliners':
         factionid = ""
-        r = ""
-        parsedJSON = ""
-        splitstrings = ""
-        idrequest = ""
         if message.content[9:len(message.content)]:
             factionid = message.content[9:len(message.content)]
         r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % (apiKey))
+        apiCheckLimit()
         parsedJSON = json.loads(r.text)
-        if error_check(str(parsedJSON), True, message.channel):
-            print("a")
+        #checks if faction exists
         if parsedJSON['best_chain'] == 0:
             await message.channel.send('Error: Invalid Faction ID')
             return
@@ -46,12 +81,11 @@ async def on_message(message):
         onliners = []
         await message.channel.send('Please wait, generating list.')
         for tornid in members:
+            #checks every members and adds to table
             rID = requests.get('https://api.torn.com/user/' + tornid + '?selections=profile&key=%s' % (apiKey))
+            apiCheckLimit()
             idrequest = json.loads(rID.text)
-            print(json.dumps(idrequest))
-            print(type(json.dumps(idrequest)))
             if json.dumps(idrequest)[0:8] == '{"error"':
-                print(json.dumps(idrequest))
                 await message.channel.send(json.dumps(idrequest))
                 return
             lastaction = idrequest['last_action']['relative']
@@ -63,16 +97,19 @@ async def on_message(message):
         for state in onliners:
             sendstring = (sendstring + " " + state + " " + "\n")
         await message.channel.send(sendstring + '```')
+        #prints faction inactives
     elif message.content == '!inactives':
         await message.channel.send('Please wait, generating list.')
         inactives = []
         getData = requests.get('https://api.torn.com/faction/?selections=basic&key=%s' % (apiKey))
+        apiCheckLimit()
         dataAsText = getData.text
         data = json.loads(dataAsText)
         members = data["members"]
         print('inactives')
         for tornid in members:
             getData = requests.get('https://api.torn.com/user/' + tornid + '?selections=profile&key=%s' % (apiKey))
+            apiCheckLimit()
             data = json.loads(getData.text)
             actiondata = data['last_action']['relative']
             playername = data['name']
@@ -86,11 +123,6 @@ async def on_message(message):
             sendstring = (sendstring + " " + state + " " + "\n")
         await message.channel.send(sendstring + "```")
 
-
-def error_check(request, output, channel):
-    if request == "{'error': {'code': 5, 'error': 'Too many requests'}}":
-        print("ERROR: Too Many Requests")
-        return True
 
 
 client.run('NTc4Mzk0MzIwNTMzNzE3MDIy.XNy-TA.qNJMsPDOraaATcoBYb-ZxivYn94')
