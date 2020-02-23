@@ -73,6 +73,9 @@ async def on_message(message):
         factionid = ""
         if message.content[9:len(message.content)]:
             factionid = message.content[9:len(message.content)]
+        if factionid == "":
+            await message.channel.send("Error: Faction ID missing. Correct usage: !onliners [faction_id]")
+            return
         r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % (apiKey))
         apichecklimit()
         parsedJSON = json.loads(r.text)
@@ -105,6 +108,9 @@ async def on_message(message):
         factionid = ""
         if message.content[10:len(message.content)]:
             factionid = message.content[10:len(message.content)]
+        if factionid == "":
+            await message.channel.send("Error: Faction ID missing. Correct usage: !inactives [faction_id]")
+            return
         r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % (apiKey))
         apichecklimit()
         parsedJSON = json.loads(r.text)
@@ -130,10 +136,14 @@ async def on_message(message):
         for state in inactives:
             sendstring = (sendstring + " " + state + " " + "\n")
         await message.channel.send(sendstring + "```")
-    elif message.content[0:8] == "!donator":
+    elif message.content[0:9] == "!donators":
         factionid = ""
-        if message.content[8:len(message.content)]:
-            factionid = message.content[8:len(message.content)]
+        if message.content[9:len(message.content)]:
+            factionid = message.content[9:len(message.content)]
+        if factionid == "":
+            await message.channel.send("Error: Faction ID missing. Correct usage: !donators [faction_id]")
+            return
+        print(factionid)
         r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % (apiKey))
         apichecklimit()
         parsedJSON = json.loads(r.text)
