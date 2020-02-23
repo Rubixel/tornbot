@@ -48,6 +48,7 @@ def apichecklimit():
 # onbotload
 async def on_ready():
     print("Program is ready.")
+    await client.change_presence(activity=discord.Game('Bullying Everyone!'))
 
 
 @client.event
@@ -141,12 +142,11 @@ async def on_message(message):
         await message.channel.send(sendstring + "```")
     elif message.content[0:9] == "!donators":
         factionid = ""
-        if message.content[9:len(message.content)]:
-            factionid = message.content[9:len(message.content)]
+        if message.content[10:len(message.content)]:
+            factionid = message.content[10:len(message.content)]
         if factionid == "":
             await message.channel.send("Error: Faction ID missing. Correct usage: !donators [faction_id]")
             return
-        print(factionid)
         r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
         apichecklimit()
         parsedJSON = json.loads(r.text)
