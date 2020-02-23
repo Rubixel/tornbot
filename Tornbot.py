@@ -59,6 +59,9 @@ async def on_message(message):
     # checks a player for info
     if message.content[0:5] == "!torn":
         idtocheck = message.content[6:len(message.content)]
+        if idtocheck = "":
+            await message.channel.send("Error: Player ID missing. Correct usage: !torn [player_id]")
+            return
         r = requests.get('https://api.torn.com/user/' + idtocheck + '?selections=basic&key=%s' % apiKey)
         apichecklimit()
         info = json.loads(r.text)
