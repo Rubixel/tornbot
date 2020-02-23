@@ -27,7 +27,7 @@ def apichecklimit():
     # takes current time
     currentMinute = [int(now.year), int(now.month), int(now.day), int(now.hour), int(now.minute), int(now.second)]
     # sees if API has been called at all
-    if lastMinute == True:
+    if lastMinute is True:
         now = datetime.datetime.now()
         lastMinute = [int(now.year), int(now.month), int(now.day), int(now.hour), int(now.minute), int(now.second)]
         return
@@ -59,7 +59,7 @@ async def on_message(message):
     # checks a player for info
     if message.content[0:5] == "!torn":
         idtocheck = message.content[6:len(message.content)]
-        if idtocheck = "":
+        if idtocheck == "":
             await message.channel.send("Error: Player ID missing. Correct usage: !torn [player_id]")
             return
         r = requests.get('https://api.torn.com/user/' + idtocheck + '?selections=basic&key=%s' % apiKey)
@@ -79,7 +79,7 @@ async def on_message(message):
         if factionid == "":
             await message.channel.send("Error: Faction ID missing. Correct usage: !onliners [faction_id]")
             return
-        r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % (apiKey))
+        r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
         apichecklimit()
         parsedJSON = json.loads(r.text)
         # checks if faction exists
@@ -91,7 +91,7 @@ async def on_message(message):
         await message.channel.send('Please wait, generating list.')
         for tornid in members:
             # checks every members and adds to table
-            rID = requests.get('https://api.torn.com/user/' + tornid + '?selections=profile&key=%s' % (apiKey))
+            rID = requests.get('https://api.torn.com/user/' + tornid + '?selections=profile&key=%s' % apiKey)
             apichecklimit()
             idrequest = json.loads(rID.text)
             if json.dumps(idrequest)[0:8] == '{"error"':
@@ -114,7 +114,7 @@ async def on_message(message):
         if factionid == "":
             await message.channel.send("Error: Faction ID missing. Correct usage: !inactives [faction_id]")
             return
-        r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % (apiKey))
+        r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
         apichecklimit()
         parsedJSON = json.loads(r.text)
         # checks if faction exists
@@ -125,12 +125,12 @@ async def on_message(message):
         members = parsedJSON["members"]
         await message.channel.send('Please wait, generating list.')
         for tornid in members:
-            getData = requests.get('https://api.torn.com/user/' + tornid + '?selections=profile&key=%s' % (apiKey))
             apichecklimit()
-            data = json.loads(getData.text)
+            data = json.loads(requests.get('https://api.torn.com/user/' + tornid + '?selections=profile&key=%s' % apiKey
+                                           ).text)
             actiondata = data['last_action']['relative']
             playername = data['name']
-            splitstrings = (actiondata.split())
+            splitstrings = actiondata.split()
             if splitstrings[1] == "hours" and int(splitstrings[0]) > 10:
                 inactives.append(playername + " [" + tornid + '] ' + actiondata)
             elif splitstrings[1] == "day" or splitstrings[1] == "days":
@@ -147,7 +147,7 @@ async def on_message(message):
             await message.channel.send("Error: Faction ID missing. Correct usage: !donators [faction_id]")
             return
         print(factionid)
-        r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % (apiKey))
+        r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
         apichecklimit()
         parsedJSON = json.loads(r.text)
         # checks if faction exists
@@ -160,19 +160,19 @@ async def on_message(message):
         for tornid in members:
             donator = False
             property = False
-            getData = requests.get('https://api.torn.com/user/' + tornid + '?selections=profile&key=%s' % (apiKey))
             apichecklimit()
-            data = json.loads(getData.text)
+            data = json.loads(requests.get('https://api.torn.com/user/' + tornid + '?selections=profile&key=%s' %
+                                           apiKey).text)
             playerName = data["name"]
             propstring = ""
             donatestring = ""
             if data["donator"] == 0:
                 donator = True
-                donatestring = (" Donator - False")
+                donatestring = " Donator - False"
             if data["property"] != "Private Island":
                 property = True
                 propstring = (" Property - " + data["property"])
-            if donator == True or property == True:
+            if donator is True or property is True:
                 donators.append(playerName + ": " + donatestring + " " + propstring)
         sendstring = "Players without Donator Status or PI: \n ```"
         for string in donators:
@@ -180,14 +180,17 @@ async def on_message(message):
         await message.channel.send(sendstring + "```")
     elif message.content == "!help":
         await message.channel.send(
-            "```css\nHelp screen:\n\nFaction:\n\t!onliners [faction_ID] -> Prints players active in the last five minutes.\n\t!inactives [faction_ID] -> Prints players inactive for over 10 hours.\n\t!donator [faction_ID]  -> Prints players without donator status, and or a PI.\n\nPlayer:\n\t!torn [player_ID] -> Prints a player's basic information & status.\n\nMisc:\n\t!help -> Prints help screen.```")
+            "```css\nHelp screen:\n\nFaction:\n\t!onliners [faction_ID] -> Prints players active in the last five "
+            "minutes.\n\t!inactives [faction_ID] -> Prints players inactive for over 10 hours.\n\t!donator "
+            "[faction_ID]  -> Prints players without donator status, and or a PI.\n\nPlayer:\n\t!torn [player_ID] -> "
+            "Prints a player's basic information & status.\n\nMisc:\n\t!help -> Prints help screen.```")
     elif message.content[0:7] == "!verify":
         verifyID = message.content[8:len(message.content)]
-        getData = requests.get('https://api.torn.com/user/' + verifyID + '?selections=discord&key=%s' % (apiKey))
         tornname = json.loads(
-            requests.get(('https://api.torn.com/user/' + verifyID + '?selections=basic&key=%s' % (apiKey))).text)[
+            requests.get(('https://api.torn.com/user/' + verifyID + '?selections=basic&key=%s' % apiKey)).text)[
             "name"]
-        data = json.loads(getData.text)
+        data = json.loads(requests.get('https://api.torn.com/user/' + verifyID + '?selections=discord&key=%s' % apiKey
+                                       ).text)
         apichecklimit()
         if '{"error": {"code": 6, "error": "Incorrect ID"}}' == json.dumps(data):
             await message.channel.send("Error(Code6): Incorrect ID")
@@ -195,14 +198,17 @@ async def on_message(message):
         discordID = data["discord"]["discordID"]
         if discordID == "":
             await message.channel.send(
-                tornname + " [" + verifyID + "] is not associated with a discord account. Please verify in Torn's Discord server: https://discordapp.com/invite/TVstvww" + "<@" + str(
-                    message.author.id) + ">")
+                tornname + " [" + verifyID + "] is not associated with a discord account. Please verify in Torn's "
+                                             "Discord server: https://discordapp.com/invite/TVstvww" + "<@" + str(
+                                              message.author.id) + ">")
         elif discordID != str(message.author.id):
             await message.channel.send(
-                tornname + " [" + verifyID + "] is associated with another discod account. Please verify with your Discord account in Torn's Discord server: https://discordapp.com/invite/TVstvww " + "<@" + str(
-                    message.author.id) + ">")
+                tornname + " [" + verifyID + "] is associated with another discod account. Please verify with your "
+                                             "Discord account in Torn's Discord server: https://discordapp.com/invite/"
+                                             "TVstvww " + "<@" + str(
+                                              message.author.id) + ">")
         elif discordID == str(message.author.id):
-            await message.channel.send("Welcome "+ tornname + " [" + verifyID + "]!")
+            await message.channel.send("Welcome " + tornname + " [" + verifyID + "]!")
             await message.author.edit(nick=tornname + " [" + verifyID + "]")
 
 
