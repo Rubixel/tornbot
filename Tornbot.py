@@ -138,15 +138,9 @@ async def on_message(message):
         onliners = []
         await message.channel.send('Please wait, generating list.')
         for torn_id in members:
-            # checks every members and adds to table
-            rID = requests.get('https://api.torn.com/user/' + torn_id + '?selections=profile&key=%s' % apiKey)
-            apichecklimit()
-            id_request = json.loads(rID.text)
-            if json.dumps(id_request)[0:8] == '{"error"':
-                await message.channel.send(json.dumps(id_request))
-                return
-            last_action = id_request['last_action']['relative']
-            player_name = id_request['name']
+            player_info = members[torn_id]
+            last_action = player_info["last_action"]["relative"]
+            player_name = player_info['name']
             split_strings = (last_action.split())
             if split_strings[1] == "minutes" and int(split_strings[0]) < 6:
                 onliners.append(player_name + " [" + torn_id + '] ' + last_action)
@@ -173,17 +167,14 @@ async def on_message(message):
         members = parsedJSON["members"]
         await message.channel.send('Please wait, generating list.')
         for torn_id in members:
-            apichecklimit()
-            data = json.loads(requests.get('https://api.torn.com/user/' + torn_id + '?selections='
-                                                                                    'profile&key=%s' % apiKey
-                                           ).text)
-            actiondata = data['last_action']['relative']
-            player_name = data['name']
-            split_strings = actiondata.split()
+            player_info = members[torn_id]
+            last_action = player_info["last_action"]["relative"]
+            player_name = player_info['name']
+            split_strings = (last_action.split())
             if split_strings[1] == "hours" and int(split_strings[0]) > 10:
-                inactives.append(player_name + " [" + torn_id + '] ' + actiondata)
+                inactives.append(player_name + " [" + torn_id + '] ' + last_action)
             elif split_strings[1] == "day" or split_strings[1] == "days":
-                inactives.append(player_name + " [" + torn_id + '] ' + actiondata)
+                inactives.append(player_name + " [" + torn_id + '] ' + last_action)
         send_string = "Players Inactive for 4 hours or more: \n ```"
         for state in inactives:
             send_string = (send_string + " " + state + " " + "\n")
