@@ -235,31 +235,31 @@ async def on_message(message):
             "Posts all bloodbag filling info in this channel.(Do not use twice, or it will break)"
             "```")
     elif message.content[0:7] == "!verify":
-        verifyID = message.content[8:len(message.content)]
-        tornname = json.loads(
-            requests.get(('https://api.torn.com/user/' + verifyID + '?selections=basic&key=%s' % apiKey)).text)[
-            "name"]
-        data = json.loads(requests.get('https://api.torn.com/user/' + verifyID + '?selections=discord&key=%s' % apiKey
-                                       ).text)
-        apichecklimit()
-        if '{"error": {"code": 6, "error": "Incorrect ID"}}' == json.dumps(data):
-            await message.channel.send("Error(Code6): Incorrect ID")
-            return
-        discordID = data["discord"]["discordID"]
-        if discordID == "":
-            await message.channel.send(
-                tornname + " [" + verifyID + "] is not associated with a discord account. Please verify in Torn's "
-                                             "Discord server: https://discordapp.com/invite/TVstvww" + "<@" + str(
-                                              message.author.id) + ">")
-        elif discordID != str(message.author.id):
-            await message.channel.send(
-                tornname + " [" + verifyID + "] is associated with another discod account. Please verify with your "
-                                             "Discord account in Torn's Discord server: https://discordapp.com/invite/"
-                                             "TVstvww " + "<@" + str(
-                                              message.author.id) + ">")
-        elif discordID == str(message.author.id):
-            await message.channel.send("Welcome " + tornname + " [" + verifyID + "]!")
-            await message.author.edit(nick=tornname + " [" + verifyID + "]")
+       # verifyID = message.content[8:len(message.content)]
+       # tornname = json.loads(
+        #    requests.get(('https://api.torn.com/user/' + verifyID + '?selections=basic&key=%s' % apiKey)).text)[
+        #    "name"]
+      #  data = json.loads(requests.get('https://api.torn.com/user/' + verifyID + '?selections=discord&key=%s' % apiKey
+      #                                 ).text)
+       # apichecklimit()
+     #   if '{"error": {"code": 6, "error": "Incorrect ID"}}' == json.dumps(data):
+        #    await message.channel.send("Error(Code6): Incorrect ID")
+        #    return
+       # discordID = data["discord"]["discordID"]
+     #   if discordID == "":
+       #     await message.channel.send(
+           #     tornname + " [" + verifyID + "] is not associated with a discord account. Please verify in Torn's "
+                        #                     "Discord server: https://discordapp.com/invite/TVstvww" + "<@" + str(
+                       #                       message.author.id) + ">")
+      #  elif discordID != str(message.author.id):
+         #   await message.channel.send(
+           #     tornname + " [" + verifyID + "] is associated with another discod account. Please verify with your "
+                 #                            "Discord account in Torn's Discord server: https://discordapp.com/invite/"
+                  #                           "TVstvww " + "<@" + str(
+             #                                 message.author.id) + ">")
+     #   elif discordID == str(message.author.id):
+      #      await message.channel.send("Welcome " + tornname + " [" + verifyID + "]!")
+       #     await message.author.edit(nick=tornname + " [" + verifyID + "]")
     elif message.content == "!bindbags":
         global bloodBagChannel
         bloodBagChannel = client.get_channel(message.channel.id)
