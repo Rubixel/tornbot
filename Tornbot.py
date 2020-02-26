@@ -234,7 +234,7 @@ async def on_message(message):
             "Prints a player's basic information & status.\n\nMisc:\n\t!help -> Prints help screen.\n\t!bindbags -> "
             "Posts all bloodbag filling info in this channel.(Do not use twice, or it will break)"
             "```")
-    elif message.content[0:7] == "!verify":
+    #elif message.content[0:7] == "!verify":
        # verifyID = message.content[8:len(message.content)]
        # tornname = json.loads(
         #    requests.get(('https://api.torn.com/user/' + verifyID + '?selections=basic&key=%s' % apiKey)).text)[
