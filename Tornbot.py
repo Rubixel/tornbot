@@ -269,8 +269,4 @@ async def on_message(message):
     elif message.content == "!shutdown":
         global shutdown
         shutdown = True
-
-# todo:
-#todo:
-#TODO:
 client.run('NTc4Mzk0MzIwNTMzNzE3MDIy.XNy-TA.qNJMsPDOraaATcoBYb-ZxivYn94')
