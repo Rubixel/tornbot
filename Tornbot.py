@@ -270,6 +270,7 @@ async def on_message(message):
         global shutdown
         shutdown = True
 
-
-
+# todo:
+#todo:
+#TODO:
 client.run('NTc4Mzk0MzIwNTMzNzE3MDIy.XNy-TA.qNJMsPDOraaATcoBYb-ZxivYn94')
