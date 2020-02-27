@@ -18,15 +18,9 @@ apiLimit = 85
 apiChecks = 0
 lastMinute = True
 bloodBagChannel = False
-npcChannel = False
 temp_armory_time_stamp = False
 armory_time_stamp = 0
 shutdown = False
-leslie_ready = False
-duke_ready = False
-#testing mode, for testing only one thing so it doesnt interfere with running bot
-testing_mode = False
-council_plus = ["ns leaders","ns council i","ns council ii", "ns council iii", "ns ii leaders"]
 
 # Limit API use function
 def apichecklimit():
@@ -66,12 +60,15 @@ async def check_bags():
     for log_ID in armory_logs:
         log = armory_logs[log_ID]
         log_timestamp = int(log["timestamp"])
+        print("saved TS" + str(armory_time_stamp))
+        print('log TS' + str(log_timestamp))
         if log_timestamp <= armory_time_stamp:
             if bagFound is True:
                 armory_time_stamp = temp_armory_time_stamp
             return
         if log_timestamp > armory_time_stamp:
             if temp_armory_time_stamp < log_timestamp:
+                print("temp updated")
                 temp_armory_time_stamp = log_timestamp
         if log["news"].find("filled one of the faction's Empty Blood Bag items.") != -1:
             bagFound = True
@@ -79,59 +76,14 @@ async def check_bags():
             playerid = string[string.find("XID=")+4:string.find("\">")]
             playername = string[string.find("\">")+2:string.find("</a>")]
             await bloodBagChannel.send(playername + " ["+playerid+"] filled one of the faction's Empty Blood Bag ""items.")
+            print(log_timestamp)
+            print(playername + " ["+playerid+"] filled one of the faction's Empty Blood Bag ""items.")
     if bagFound is True:
         armory_time_stamp = temp_armory_time_stamp
-
-async def check_leslie():
-    global npcChannel
-    global leslie_ready
-    r = requests.get("https://yata.alwaysdata.net/loot/timings/")
-    npc_info = json.loads(r.text)
-    four_time = npc_info["15"]["timings"]["4"]["due"]
-    if four_time < 0:
-        leslie_ready = False
-    if four_time < 200:
-        return
-    if four_time < 400 and leslie_ready is False:
-        leslie_ready = True
-        ready_minutes = str(four_time //60)
-        ready_seconds = str(four_time %60)
-        await npcChannel.send("Leslie will be ready in: "+ready_minutes+" minutes and "+ready_seconds+" "
-                              "seconds!\n"+"https://www.torn.com/loader2.php?sid=get"
-                                                                  "InAttack&user2ID=15")
-async def check_duke():
-    global npcChannel
-    global duke_ready
-    r = requests.get("https://yata.alwaysdata.net/loot/timings/")
-    npc_info = json.loads(r.text)
-    four_time = npc_info["4"]["timings"]["4"]["due"]
-    if four_time < 0:
-        duke_ready = False
-    if four_time < 200:
-        return
-    if four_time < 400 and duke_ready is False:
-        duke_ready = True
-        ready_minutes = str(four_time //60)
-        ready_seconds = str(four_time %60)
-        await npcChannel.send("Duke will be ready in: "+ready_minutes+" minutes and "+ready_seconds+" "
-                              "seconds!\n"+"https://www.torn.com/loader2.php?sid=get"
-                                                                  "InAttack&user2ID=4")
-
-def checkCouncilRoles(roleList):
-    global council_plus
-    for authorRole in roleList:
-        for councilRole in council_plus:
-            if authorRole.name.lower() == councilRole:
-                return True
-    return False
-
-async def npc_clock():
-    await asyncio.sleep(60)
-    await check_duke()
-    await check_leslie()
-    await npc_clock()
+    print("End Saved TS" + str(armory_time_stamp))
 
 async def wait_minute():
+    print("waiting")
     if shutdown is True:
         print("Blood bag command shutdown")
         await bloodBagChannel.send("Blood Bags shutdown")
@@ -154,11 +106,6 @@ async def on_message(message):
         return
     # checks a player for info
     if message.content[0:5] == "!torn":
-        if checkCouncilRoles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \"" + message.content + "\"")
-            return
-        if testing_mode == True:
-            return
         idtocheck = message.content[6:len(message.content)]
         if idtocheck == "":
             await message.channel.send("Error: Player ID missing. Correct usage: !torn [player_id]")
@@ -174,11 +121,6 @@ async def on_message(message):
             info['status']['description'] + '.')
     # all faction onliners last 5 mins
     elif message.content[0:9] == '!onliners':
-        if checkCouncilRoles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
-            return
-        if testing_mode == True:
-            return
         factionid = ""
         if message.content[9:len(message.content)]:
             factionid = message.content[9:len(message.content)]
@@ -208,11 +150,6 @@ async def on_message(message):
         await message.channel.send(send_string + '```')
         # prints faction inactives
     elif message.content[0:10] == '!inactives':
-        if checkCouncilRoles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
-            return
-        if testing_mode == True:
-            return
         factionid = ""
         if message.content[10:len(message.content)]:
             factionid = message.content[10:len(message.content)]
@@ -243,11 +180,6 @@ async def on_message(message):
             send_string = (send_string + " " + state + " " + "\n")
         await message.channel.send(send_string + "```")
     elif message.content[0:9] == "!donators":
-        if checkCouncilRoles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
-            return
-        if testing_mode == True:
-            return
         factionid = ""
         if message.content[10:len(message.content)]:
             factionid = message.content[10:len(message.content)]
@@ -286,17 +218,12 @@ async def on_message(message):
             send_string = (send_string + " " + string + " " + "\n")
         await message.channel.send(send_string + "```")
     elif message.content == "!help":
-        #todo update todo to use embed format
-        #todo add who can use commands
-        if testing_mode == True:
-            return
         await message.channel.send(
             "```css\nHelp screen:\n\nFaction:\n\t!onliners [faction_ID] -> Prints players active in the last five "
-            "minutes.ᴿ\n\t!inactives [faction_ID] -> Prints players inactive for over 10 hours.ᴿ\n\t!donators "
-            "[faction_ID]  -> Prints players without donator status, and or a PI.ᴿ\n\nPlayer:\n\t!torn [player_ID] -> "
-            "Prints a player's basic information & status.ᴿ\n\nMisc:\n\t!help -> Prints help screen.\n\t!bindbags -> "
-            "Posts all bloodbag filling info in this channel.ᴿ(Do not use twice, or it will break)\n\t!bindNPC -> "
-            "Prints NPC updates int his channel.ᴿ\n\t\tᴿIs restricted to council & leaders."
+            "minutes.\n\t!inactives [faction_ID] -> Prints players inactive for over 10 hours.\n\t!donator "
+            "[faction_ID]  -> Prints players without donator status, and or a PI.\n\nPlayer:\n\t!torn [player_ID] -> "
+            "Prints a player's basic information & status.\n\nMisc:\n\t!help -> Prints help screen.\n\t!bindbags -> "
+            "Posts all bloodbag filling info in this channel.(Do not use twice, or it will break)"
             "```")
     #elif message.content[0:7] == "!verify":
        # verifyID = message.content[8:len(message.content)]
@@ -325,29 +252,12 @@ async def on_message(message):
       #      await message.channel.send("Welcome " + tornname + " [" + verifyID + "]!")
        #     await message.author.edit(nick=tornname + " [" + verifyID + "]")
     elif message.content == "!bindbags":
-        if testing_mode == True:
-            return
-        if checkCouncilRoles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
-            return
         global bloodBagChannel
         bloodBagChannel = client.get_channel(message.channel.id)
         await bloodBagChannel.send("Bloodbag filling will now output to: #" + message.channel.name+"!")
         await wait_minute()
         await check_bags()
-    elif message.content == "!bindNPC":
-        global npcChannel
-        if checkCouncilRoles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
-            return
-        npcChannel = client.get_channel(message.channel.id)
-        await npcChannel.send("NPC information will now output to: #" + message.channel.name+"!")
-        await npc_clock()
     elif message.content == "!shutdown":
-        if testing_mode == True:
-            return
         global shutdown
         shutdown = True
 client.run('NTc4Mzk0MzIwNTMzNzE3MDIy.XNy-TA.qNJMsPDOraaATcoBYb-ZxivYn94')
-
-
