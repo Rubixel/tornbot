@@ -25,8 +25,10 @@ shutdown = False
 leslie_ready = False
 duke_ready = False
 #testing mode, for testing only one thing so it doesnt interfere with running bot
-testing_mode = False
+testing_mode = True
 council_plus = ["ns leaders","ns council i","ns council ii", "ns council iii", "ns ii leaders"]
+bloodBagChannel = ""
+npcChannel = ""
 
 # Limit API use function
 def apichecklimit():
@@ -97,7 +99,7 @@ async def check_leslie():
         ready_minutes = str(four_time //60)
         ready_seconds = str(four_time %60)
         await npcChannel.send("Leslie will be ready in: "+ready_minutes+" minutes and "+ready_seconds+" "
-                              "seconds! <@612556617153511435>\n"+"https://www.torn.com/loader2.php?sid=get"
+                              "seconds! <@&612556617153511435>\n"+"https://www.torn.com/loader2.php?sid=get"
                                                                   "InAttack&user2ID=15")
 async def check_duke():
     global npcChannel
@@ -114,7 +116,7 @@ async def check_duke():
         ready_minutes = str(four_time //60)
         ready_seconds = str(four_time %60)
         await npcChannel.send("Duke will be ready in: "+ready_minutes+" minutes and "+ready_seconds+" "
-                              "seconds! <@612556617153511435>\n"+"https://www.torn.com/loader2.php?sid=get"
+                              "seconds! <@&612556617153511435>\n"+"https://www.torn.com/loader2.php?sid=get"
                                                                   "InAttack&user2ID=4")
 
 def checkCouncilRoles(roleList):
@@ -143,8 +145,23 @@ async def wait_minute():
 @client.event
 # on bot load
 async def on_ready():
-    print("Program is ready.")
+    global armory_time_stamp
     await client.change_presence(activity=discord.Game('Bullying Everyone!'))
+   # if testing_mode == True:
+    #    return
+    global bloodBagChannel
+    bloodBagChannel = client.get_channel(645540955688271872)
+    r = requests.get('https://api.torn.com/torn/?selections=timestamp&key=%s' % apiKey)
+    armory_time_stamp = json.loads(r.text)["timestamp"]
+   # print("Connected to: " + bloodBagChannel.name + " " + str(armory_time_stamp))
+    global npcChannel
+    npcChannel = client.get_channel(586185860505010176)
+    print("Connected to: " + npcChannel.name)
+   # await npcChannel.send("NPC information will now output to: #" + message.channel.name + "!")
+    await wait_minute()
+    await check_bags()
+    await npc_clock()
+    print("Program is ready.")
 
 @client.event
 # whenever a message is sent
@@ -324,37 +341,16 @@ async def on_message(message):
      #   elif discordID == str(message.author.id):
       #      await message.channel.send("Welcome " + tornname + " [" + verifyID + "]!")
        #     await message.author.edit(nick=tornname + " [" + verifyID + "]")
-    elif message.content == "!bindbags":
-        #todo set new timestamp for armory on command use to prevent spam
-        if testing_mode == True:
-            return
-        if checkCouncilRoles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
-            return
-        global bloodBagChannel
-        bloodBagChannel = client.get_channel(message.channel.id)
-        r = requests.get('https://api.torn.com/faction/?selections=armorynews&key=%s' % apiKey)
-        armory_logs = json.loads(r.text)["armorynews"]
-        global armory_time_stamp
-        for x in armory_logs:
-            armory_time_stamp = int(x)
-            break
-        await bloodBagChannel.send("Bloodbag filling will now output to: #" + message.channel.name+"!")
-        await wait_minute()
-        await check_bags()
-    elif message.content == "!bindNPC":
-        global npcChannel
-        if checkCouncilRoles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
-            return
-        npcChannel = client.get_channel(message.channel.id)
-        await npcChannel.send("NPC information will now output to: #" + message.channel.name+"!")
-        await npc_clock()
     elif message.content == "!shutdown":
+        if checkCouncilRoles(message.author.roles) is False:
+            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
+            return
         if testing_mode == True:
             return
         global shutdown
         shutdown = True
+    elif message.content == "!getchannelinfo":
+        print(message.channel.id)
 client.run('NTc4Mzk0MzIwNTMzNzE3MDIy.XNy-TA.qNJMsPDOraaATcoBYb-ZxivYn94')
 
 
