@@ -58,7 +58,7 @@ async def check_bags():
     global armory_time_stamp
     global bloodBagChannel
     temp_armory_time_stamp = 0
-    r = requests.get("https://api.torn.com/faction/?selections=armorynews&key=SmKfloSmgSDgHZ6e")
+    r = requests.get('https://api.torn.com/faction/?selections=armorynews&key=%s' % apiKey)
     armory_logs = json.loads(r.text)["armorynews"]
     bagFound = False
     if bloodBagChannel == False:
@@ -97,7 +97,7 @@ async def check_leslie():
         ready_minutes = str(four_time //60)
         ready_seconds = str(four_time %60)
         await npcChannel.send("Leslie will be ready in: "+ready_minutes+" minutes and "+ready_seconds+" "
-                              "seconds!\n"+"https://www.torn.com/loader2.php?sid=get"
+                              "seconds! <@612556617153511435>\n"+"https://www.torn.com/loader2.php?sid=get"
                                                                   "InAttack&user2ID=15")
 async def check_duke():
     global npcChannel
@@ -114,7 +114,7 @@ async def check_duke():
         ready_minutes = str(four_time //60)
         ready_seconds = str(four_time %60)
         await npcChannel.send("Duke will be ready in: "+ready_minutes+" minutes and "+ready_seconds+" "
-                              "seconds!\n"+"https://www.torn.com/loader2.php?sid=get"
+                              "seconds! <@612556617153511435>\n"+"https://www.torn.com/loader2.php?sid=get"
                                                                   "InAttack&user2ID=4")
 
 def checkCouncilRoles(roleList):
@@ -325,6 +325,7 @@ async def on_message(message):
       #      await message.channel.send("Welcome " + tornname + " [" + verifyID + "]!")
        #     await message.author.edit(nick=tornname + " [" + verifyID + "]")
     elif message.content == "!bindbags":
+        #todo set new timestamp for armory on command use to prevent spam
         if testing_mode == True:
             return
         if checkCouncilRoles(message.author.roles) is False:
@@ -332,6 +333,12 @@ async def on_message(message):
             return
         global bloodBagChannel
         bloodBagChannel = client.get_channel(message.channel.id)
+        r = requests.get('https://api.torn.com/faction/?selections=armorynews&key=%s' % apiKey)
+        armory_logs = json.loads(r.text)["armorynews"]
+        global armory_time_stamp
+        for x in armory_logs:
+            armory_time_stamp = int(x)
+            break
         await bloodBagChannel.send("Bloodbag filling will now output to: #" + message.channel.name+"!")
         await wait_minute()
         await check_bags()
