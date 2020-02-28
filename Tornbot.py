@@ -39,7 +39,9 @@ bagTime = 0
 printTime = 0
 randBully = 0
 debug = False
-bully_list = ["Hcom", "jukka", "Gratify", "ZeroTwo", "STEVE_HOLT", "Rhino", "LTJELLOMAN", "Bones", "Roxy", "Everyone"]
+bully_list = ["Hcom", "jukka", "Gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow",
+              "STEVE_HOLT", "Rhino", "LTJELLOMAN", "Bones", "Roxy", "Everyone", "ttyper"]
+
 
 def printd(*args):
     if debug:
@@ -96,12 +98,13 @@ async def check_bags():
         if log["news"].find("filled one of the faction's Empty Blood Bag items.") != -1:
             bagFound = True
             string = log["news"]
-            playerid = string[string.find("XID=")+4:string.find("\">")]
-            playername = string[string.find("\">")+2:string.find("</a>")]
-            await bloodBagChannel.send(playername + " ["+playerid+"] filled one of the faction's "
-                                                                  "Empty Blood Bag ""items.")
+            playerid = string[string.find("XID=") + 4:string.find("\">")]
+            playername = string[string.find("\">") + 2:string.find("</a>")]
+            await bloodBagChannel.send(playername + " [" + playerid + "] filled one of the faction's "
+                                                                      "Empty Blood Bag ""items.")
     if bagFound is True:
         armory_time_stamp = temp_armory_time_stamp
+
 
 # todo add in bit of formatting for leslie & duke message: NPC_NAME will be at level four in etc etc...
 async def check_leslie():
@@ -118,11 +121,11 @@ async def check_leslie():
         leslie_ready = True
         ready_minutes = str(four_time // 60)
         ready_seconds = str(four_time % 60)
-        await npcChannel.send("Leslie will be ready in: "+ready_minutes+" minutes and "+ready_seconds+" "
-                              "seconds! <@&612556617153511435>\n"+"https://www.torn.com/loader2.php?sid=get"
-                                                                  "InAttack&user2ID=15")
-        
-        
+        await npcChannel.send("Leslie will be ready in: " + ready_minutes + " minutes and " + ready_seconds + " "
+                                                                                                              "seconds! <@&612556617153511435>\n" + "https://www.torn.com/loader2.php?sid=get"
+                                                                                                                                                    "InAttack&user2ID=15")
+
+
 async def check_duke():
     global npcChannel
     global duke_ready
@@ -137,9 +140,8 @@ async def check_duke():
         duke_ready = True
         ready_minutes = str(four_time // 60)
         ready_seconds = str(four_time % 60)
-        await npcChannel.send("Duke will be ready in: "+ready_minutes+" minutes and "+ready_seconds+" "
-                              "seconds! <@&612556617153511435>\n"+"https://www.torn.com/loader2.php?sid=get"
-                                                                  "InAttack&user2ID=4")
+        await npcChannel.send("Duke will be ready in: " + ready_minutes + " minutes and " + ready_seconds + " "
+        "seconds! <@&612556617153511435>\n" + "https://www.torn.com/loader2.php?sid=getInAttack&user2ID=4")
 
 
 def check_council_roles(role_list):
@@ -190,7 +192,7 @@ async def on_ready():
     global bully_list
     random.seed()
     rand = random.randrange(0, len(bully_list))
-    await client.change_presence(activity=discord.Game('Bullying ' + bully_list[rand]+"!"))
+    await client.change_presence(activity=discord.Game('Bullying ' + bully_list[rand] + "!"))
     global bloodBagChannel
     bloodBagChannel = client.get_channel(645540955688271872)
     r = requests.get('https://api.torn.com/torn/?selections=timestamp&key=%s' % apiKey)
@@ -198,8 +200,8 @@ async def on_ready():
     global npcChannel
     npcChannel = client.get_channel(586185860505010176)
     print("================================")
-    print("Start time: "+str(time.time()))
-    print("Start time: "+str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(1347517370))))
+    print("Start time: " + str(time.time()))
+    print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(1347517370))))
     print("Tornbot.py is ready.")
     print("================================")
     await timer()
@@ -234,7 +236,7 @@ async def on_message(message):
     # all faction onliners last 5 mins
     elif message.content[0:9] == '!onliners':
         if check_council_roles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
+            await message.author.send("You do not have permissions to use this command: \"" + message.content + "\"")
             return
         if testing_mode is True:
             return
@@ -268,7 +270,7 @@ async def on_message(message):
         # prints faction inactives
     elif message.content[0:10] == '!inactives':
         if check_council_roles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
+            await message.author.send("You do not have permissions to use this command: \"" + message.content + "\"")
             return
         if testing_mode is True:
             return
@@ -303,7 +305,7 @@ async def on_message(message):
         await message.channel.send(send_string + "```")
     elif message.content[0:9] == "!donators":
         if check_council_roles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
+            await message.author.send("You do not have permissions to use this command: \"" + message.content + "\"")
             return
         if testing_mode is True:
             return
@@ -371,20 +373,20 @@ async def on_message(message):
         if discordID == "":
             await message.channel.send(
                 tornname + " [" + verifyID + "] is not associated with a discord account. Please verify in Torn's "
-                                            "Discord server: https://discordapp.com/invite/TVstvww" + "<@" + str(
-                                           message.author.id) + ">")
+                                             "Discord server: https://discordapp.com/invite/TVstvww"
+                + "<@" + str(message.author.id) + ">")
         elif discordID != str(message.author.id):
             await message.channel.send(
                 tornname + " [" + verifyID + "] is associated with another discod account. Please verify with your "
                                              "Discord account in Torn's Discord server: https://discordapp.com/invite/"
-                                             "TVstvww " + "<@" + str(
-                                              message.author.id) + ">")
+                                             "TVstvww " + "<@" +
+                str(message.author.id) + ">")
         elif discordID == str(message.author.id):
             await message.channel.send("Welcome " + tornname + " [" + verifyID + "]!")
             await message.author.edit(nick=tornname + " [" + verifyID + "]")
     elif message.content == "!shutdown":
         if check_council_roles(message.author.roles) is False:
-            await message.author.send("You do not have permissions to use this command: \""+message.content+"\"")
+            await message.author.send("You do not have permissions to use this command: \"" + message.content + "\"")
             return
         if testing_mode is True:
             return
@@ -398,5 +400,3 @@ async def on_message(message):
 
 
 client.run('NTc4Mzk0MzIwNTMzNzE3MDIy.XNy-TA.qNJMsPDOraaATcoBYb-ZxivYn94')
-
-
