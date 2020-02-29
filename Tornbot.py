@@ -1,5 +1,6 @@
 # imports
 import discord
+from discord.ext import commands
 import json
 import requests
 import time
@@ -12,6 +13,7 @@ import bot_keys
 
 # bot info
 client = discord.Client()
+#bot = commands.Bot(commands_prefix="!:')
 # replace with your own Torn API key in. apiKey = "TORN_API_KEY"
 apiKey = bot_keys.apiKey
 # replace with your own discord bot token in bot_id = "DISCORD_BOT_TOKEN"
@@ -41,6 +43,7 @@ printTime = 0
 randBully = 0
 # !verify would interfere with NS discord verify, so its disabled through this
 block_verify = True
+on_ready_run = False
 # cycles between these for status
 bully_list = ["Hcom", "jukka", "Gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow",
               "STEVE_HOLT", "Rhino", "LTJELLOMAN", "Bones", "Roxy", "Everyone", "ttyper", "Vicarious", "Stretch",
@@ -81,6 +84,8 @@ def apichecklimit():
 
 # bloodbag function
 async def check_bags():
+    if block_verify is True:
+        return
     global armory_time_stamp
     global bloodBagChannel
     temp_armory_time_stamp = 0
@@ -178,17 +183,17 @@ def check_council_roles(role_list):
 
 # runs every 10 seconds, keeps all of the npcTimers, and blood bag timers, and a few other things running
 async def timer():
-    global bagTime
+    #global bagTime
     global npcTime
     global printTime
     global randBully
-    bagTime += 20
+   # bagTime += 20
     npcTime += 20
     printTime += 20
     randBully += 20
-    if bagTime >= 60:
-        bagTime = 0
-        await check_bags()
+   # if bagTime >= 60:
+   #     bagTime = 0
+  #      await check_bags()
     if npcTime >= 100:
         npcTime = 0
         await check_duke()
@@ -211,26 +216,30 @@ async def timer():
 @client.event
 # on bot load
 async def on_ready():
-    printd("on ready")
-    global armory_time_stamp
-    global bully_list
-    random.seed()
-    rand = random.randrange(0, len(bully_list))
-    await client.change_presence(activity=discord.Game('Bullying ' + bully_list[rand] + "!"))
-    global bloodBagChannel
-    bloodBagChannel = client.get_channel(645540955688271872)
-    r = requests.get('https://api.torn.com/torn/?selections=timestamp&key=%s' % apiKey)
-    armory_time_stamp = json.loads(r.text)["timestamp"]
-    global npcChannel
-    npcChannel = client.get_channel(586185860505010176)
-    print("================================")
-    print("Start time: " + str(time.time()))
-    print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
-    print("Tornbot.py is ready.")
-    if testing_mode is True:
-        print("Testing mode is Enabled")
-    print("================================")
-    await timer()
+    global on_ready_run
+    if on_ready_run is False:
+        on_ready_run = True
+        printd("on ready")
+        global armory_time_stamp
+        global bully_list
+        random.seed()
+        rand = random.randrange(0, len(bully_list))
+        await client.change_presence(activity=discord.Game('Bullying ' + bully_list[rand] + "!"))
+        global bloodBagChannel
+        bloodBagChannel = client.get_channel(645540955688271872)
+        r = requests.get('https://api.torn.com/torn/?selections=timestamp&key=%s' % apiKey)
+        armory_time_stamp = json.loads(r.text)["timestamp"]
+        print(armory_time_stamp)
+        global npcChannel
+        npcChannel = client.get_channel(586185860505010176)
+        print("================================")
+        print("Start time: " + str(time.time()))
+        print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
+        print("Tornbot.py is ready.")
+        if testing_mode is True:
+            print("Testing mode is Enabled")
+        print("================================")
+        await timer()
 
 
 @client.event
