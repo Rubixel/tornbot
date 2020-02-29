@@ -6,19 +6,18 @@ import time
 import datetime
 import asyncio
 import random
+#remove bot_keys
+import bot_keys
+
 
 # bot info
 client = discord.Client()
-# api key
-apiKey = 'SmKfloSmgSDgHZ6e'
+# replace with your own Torn API key in. apiKey = "TORN_API_KEY"
+apiKey = bot_keys.api_key
+# replace with your own discord bot token in bot_id = "DISCORD_BOT_TOKEN"
+bot_id = bot_keys.discord_bot_id
 
-# Stuff to prevent API key being used >100 times.
-
-
-# todo print version number/time etc information for debugging
-# todo also create stuff to help debugging in nohup.out
-
-
+#constants
 startTime = datetime.datetime.now()
 apiLimit = 85
 apiChecks = 0
@@ -28,19 +27,16 @@ shutdown = False
 leslie_ready = False
 duke_ready = False
 # testing mode, for testing only one thing so it doesnt interfere with running bot
-testing_mode = False
+testing_mode = True
 council_plus = ["ns leaders", "ns council i", "ns council ii", "ns council iii", "ns ii leaders"]
 admin_users = [200676892024504320, 547926928313548801, 547986194055692289]
 bloodBagChannel = ""
 npcChannel = ""
-# todo assign timer() variables on the first call instead of having them in global
-npcTime = 0
-bagTime = 0
-printTime = 0
-randBully = 0
+timer_first = True
 debug = False
 bully_list = ["Hcom", "jukka", "Gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow",
-              "STEVE_HOLT", "Rhino", "LTJELLOMAN", "Bones", "Roxy", "Everyone", "ttyper"]
+              "STEVE_HOLT", "Rhino", "LTJELLOMAN", "Bones", "Roxy", "Everyone", "ttyper", "Vicarious", "Stretch",
+              "Karen"]
 
 
 def printd(*args):
@@ -80,30 +76,39 @@ async def check_bags():
     global armory_time_stamp
     global bloodBagChannel
     temp_armory_time_stamp = 0
-    r = requests.get('https://api.torn.com/faction/?selections=armorynews&key=%s' % apiKey)
-    armory_logs = json.loads(r.text)["armorynews"]
-    bagFound = False
-    if bloodBagChannel is False:
-        return
-    for log_ID in armory_logs:
-        log = armory_logs[log_ID]
-        log_timestamp = int(log["timestamp"])
-        if log_timestamp <= armory_time_stamp:
-            if bagFound is True:
-                armory_time_stamp = temp_armory_time_stamp
+    try:
+        r = requests.get('https://api.torn.com/faction/?selections=armorynews&key=%s' % apiKey)
+        armory_logs = json.loads(r.text)["armorynews"]
+        bagFound = False
+        if bloodBagChannel is False:
             return
-        if log_timestamp > armory_time_stamp:
-            if temp_armory_time_stamp < log_timestamp:
-                temp_armory_time_stamp = log_timestamp
-        if log["news"].find("filled one of the faction's Empty Blood Bag items.") != -1:
-            bagFound = True
-            string = log["news"]
-            playerid = string[string.find("XID=") + 4:string.find("\">")]
-            playername = string[string.find("\">") + 2:string.find("</a>")]
-            await bloodBagChannel.send(playername + " [" + playerid + "] filled one of the faction's "
-                                                                      "Empty Blood Bag ""items.")
-    if bagFound is True:
-        armory_time_stamp = temp_armory_time_stamp
+        for log_ID in armory_logs:
+            log = armory_logs[log_ID]
+            log_timestamp = int(log["timestamp"])
+            if log_timestamp <= armory_time_stamp:
+                if bagFound is True:
+                    armory_time_stamp = temp_armory_time_stamp
+                return
+            if log_timestamp > armory_time_stamp:
+                if temp_armory_time_stamp < log_timestamp:
+                    temp_armory_time_stamp = log_timestamp
+            if log["news"].find("filled one of the faction's Empty Blood Bag items.") != -1:
+                bagFound = True
+                string = log["news"]
+                playerid = string[string.find("XID=") + 4:string.find("\">")]
+                playername = string[string.find("\">") + 2:string.find("</a>")]
+                await bloodBagChannel.send(playername + " [" + playerid + "] filled one of the faction's "
+                                                                          "Empty Blood Bag ""items.")
+        if bagFound is True:
+            armory_time_stamp = temp_armory_time_stamp
+    except Exception as e:
+        print("=================================")
+        print(e)
+        print(armory_logs)
+        print(armory_time_stamp)
+        print(r)
+        print(r.text)
+        print("Error time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
 
 
 # todo add in bit of formatting for leslie & duke message: NPC_NAME will be at level four in etc etc...
@@ -154,11 +159,13 @@ def check_council_roles(role_list):
 
 
 async def timer():
-    global bagTime
-    global npcTime
-    global printTime
-    global randBully
-    global bully_list
+    global timer_first
+    if timer_first is True:
+        time_first = False
+        bagTime = 0
+        npcTime = 0
+        printTime = 0
+        randBully = 0
     bagTime += 20
     npcTime += 20
     printTime += 20
@@ -201,7 +208,7 @@ async def on_ready():
     npcChannel = client.get_channel(586185860505010176)
     print("================================")
     print("Start time: " + str(time.time()))
-    print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(1347517370))))
+    print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
     print("Tornbot.py is ready.")
     print("================================")
     await timer()
@@ -348,6 +355,7 @@ async def on_message(message):
         await message.channel.send(send_string + "```")
     elif message.content == "!help":
         # todo update todo to use embed format
+        # todo remove !bind commands
         if testing_mode is True:
             return
         await message.channel.send(
@@ -399,4 +407,4 @@ async def on_message(message):
         print(message.author.id)
 
 
-client.run('NTc4Mzk0MzIwNTMzNzE3MDIy.XNy-TA.qNJMsPDOraaATcoBYb-ZxivYn94')
+client.run(bot_id)
