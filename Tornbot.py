@@ -7,18 +7,15 @@ import datetime
 import asyncio
 import random
 # remove bot_keys when
-import configparser
-config = configparser.ConfigParser()
-config.read("tornbot.ini")
-
+import bot_keys
 # Code written/used by: Hcom [2003603]. Hcom3#7142
 
 # bot info
 client = discord.Client()
 # replace with your own Torn API key in. apiKey = "TORN_API_KEY"
-apiKey = config['DEFAULT']['apikey']
+apiKey = bot_keys.apiKey
 # replace with your own discord bot token in bot_id = "DISCORD_BOT_TOKEN"
-bot_id = ['DEFAULT']['token']
+bot_id = bot_keys.bot_id
 
 # constants
 startTime = datetime.datetime.now()
@@ -429,7 +426,7 @@ async def on_message(message):
         global shutdown
         shutdown = True
     elif message.content == "!source":
-        message.channel.send("https://github.com/Rubixel/tornbot")
+        await message.channel.send("https://github.com/Rubixel/tornbot")
     elif message.content == "!getchannelinfo":
         # used for assigning channels that the bot posts in
         if check_council_roles(message.author.roles) is False:
