@@ -220,16 +220,16 @@ async def on_ready():
     if on_ready_run is False:
         on_ready_run = True
         printd("on ready")
-        global armory_time_stamp
+        #global armory_time_stamp
         global bully_list
         random.seed()
         rand = random.randrange(0, len(bully_list))
         await client.change_presence(activity=discord.Game('Bullying ' + bully_list[rand] + "!"))
         global bloodBagChannel
         bloodBagChannel = client.get_channel(645540955688271872)
-        r = requests.get('https://api.torn.com/torn/?selections=timestamp&key=%s' % apiKey)
-        armory_time_stamp = json.loads(r.text)["timestamp"]
-        print(armory_time_stamp)
+       # r = requests.get('https://api.torn.com/torn/?selections=timestamp&key=%s' % apiKey)
+        #armory_time_stamp = json.loads(r.text)["timestamp"]
+       # print(armory_time_stamp)
         global npcChannel
         npcChannel = client.get_channel(586185860505010176)
         print("================================")
