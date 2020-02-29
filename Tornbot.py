@@ -8,6 +8,7 @@ import datetime
 import asyncio
 import random
 import bot_keys
+
 # Code written/used by: Hcom [2003603]. Hcom3#7142
 
 # bot info
@@ -48,9 +49,25 @@ randBully = 0
 block_verify = True
 on_ready_run = False
 # cycles between these for status
-bully_list = ["Hcom", "jukka", "Gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow",
-              "STEVE_HOLT", "Rhino", "LTJELLOMAN", "Bones", "Roxy", "Everyone", "ttyper", "Vicarious", "Stretch",
-              "Karen", "Itself"]
+bully_list = ["Hcom", "jukka", "Gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow", "STEVE_HOLT", "Rhino", "LTJELLOMAN",
+              "Bones", "Roxy", "Everyone", "ttyper", "Vicarious", "Stretch", "Karen", "Itself"]
+npc_list = ["Duke", "Leslie"]
+npc_index = {}
+bcount = 0
+for npc in npc_list:
+    npc_index[npc] = bcount
+    bcount += 1
+npc_ids = ["4", "15"]
+npc_times = {}
+npc_ready = {}
+inverse_npc_list = {}
+lcount = 0
+for npc in npc_list:
+    inverse_npc_list[lcount] = npc
+    lcount += 1
+for npc in npc_list:
+    npc_times[npc] = 0
+    npc_ready[npc] = True
 
 
 # used for debugging
@@ -85,50 +102,35 @@ def apichecklimit():
         time.sleep(60)
 
 
-# todo edit NPC functions to prepare for the launch of the new NPCs
-
-# checks leslie, and if they are ready for attack
-async def check_leslie():
+async def check_npc():
     global npcChannel
-    global leslie_ready
+    global npc_list
+    global npc_times
+    global npc_ready
+    global inverse_npc_list
+    global npc_ids
+    global npc_index
     r = requests.get("https://yata.alwaysdata.net/loot/timings/")
-    npc_info = json.loads(r.text)
-    four_time = npc_info["15"]["timings"]["4"]["due"]
-    if four_time < 0:
-        leslie_ready = False
-    if four_time < 200:
-        return
-    if four_time < 400 and leslie_ready is False:
-        leslie_ready = True
-        # formats seconds left into minutes and seconds
-        ready_minutes = str(four_time // 60)
-        ready_seconds = str(four_time % 60)
-        await npcChannel.send("Leslie will be ready in: "
-                              + ready_minutes + " minutes and " + ready_seconds + " seconds! <@&612556617153511435>\n" +
-                              "https://www.torn.com/loader2.php?sid=getInAttack&user2ID=15")
-
-
-# checks duke, and if they are ready for attack
-async def check_duke():
-    global npcChannel
-    global duke_ready
-    r = requests.get("https://yata.alwaysdata.net/loot/timings/")
-    npc_info = json.loads(r.text)
-    four_time = npc_info["4"]["timings"]["4"]["due"]
-    # four_time is how many seconds to level four, if its between 200 and 400 seconds it will print a message in the
-    # npcChannel
-    if four_time < 0:
-        duke_ready = False
-    if four_time < 200:
-        return
-    if four_time < 400 and duke_ready is False:
-        duke_ready = True
-        # formats seconds left into minutes and seconds
-        ready_minutes = str(four_time // 60)
-        ready_seconds = str(four_time % 60)
-        await npcChannel.send("Duke will be ready in: " + ready_minutes +
-                              " minutes and " + ready_seconds + " ""seconds! <@&612556617153511435>\n" +
-                              "https://www.torn.com/loader2.php?sid=getInAttack&user2ID=4")
+    npc_request = json.loads(r.text)
+    for i in npc_request:
+        npc_info = npc_request[i]
+        npc_name = npc_info["name"]
+        npc_times[npc_name] = npc_info["timings"]["4"]["due"]
+    for inverse_npc in inverse_npc_list:
+        npc_name = npc_list[int(inverse_npc)]
+        four_time = npc_times[npc_name]
+        if four_time < 0:
+            npc_ready[npc_name] = True
+        if 200 < four_time < 400:
+            if npc_ready[npc_name] is True:
+                ready_minutes = str(four_time // 60)
+                ready_seconds = str(four_time % 60)
+                await npcChannel.send(npc_name + " [" + npc_ids[npc_index[npc_name]] + "] will be at level 4 in: "
+                                      + ready_minutes + " mintues and " + ready_seconds + "seconds! "
+                                                                                          "<@&612556617153511435>\n "
+                                      + "https://www.torn.com/loader2.php?sid=getInAttack&user2ID=" + npc_ids[
+                                          npc_index[npc_name]])
+                npc_ready[npc_name] = False
 
 
 # used for permission checking
@@ -151,8 +153,7 @@ async def timer():
     randBully += 20
     if npcTime >= 100:
         npcTime = 0
-        await check_duke()
-        await check_leslie()
+        await check_npc()
     if printTime >= 1800:
         # used for debugging
         printTime = 0
@@ -161,6 +162,7 @@ async def timer():
         print("Start time: " + str(time.time()))
         print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(1347517370))))
     if randBully >= 3600:
+        randBully = 0
         random.seed()
         rand = random.randrange(0, len(bully_list))
         await bot.change_presence(activity=discord.Game('Bullying ' + bully_list[rand] + "!"))
@@ -190,6 +192,7 @@ async def on_ready():
         if testing_mode is True:
             print("Testing mode is Enabled")
         print("================================")
+        await check_npc()
         await timer()
 
 
@@ -266,6 +269,7 @@ async def onliners_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You must include a faction ID.\nExample: !onliners 11747')
 
+
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
@@ -293,7 +297,7 @@ async def inactives(ctx, factionid):
     if parsedJSON['best_chain'] == 0:
         await ctx.send('Error: Invalid Faction ID')
         return
-    inactives = []
+    inactive_players = []
     members = parsedJSON["members"]
     await ctx.send('Please wait, generating list.')
     for torn_id in members:
@@ -302,11 +306,11 @@ async def inactives(ctx, factionid):
         player_name = player_info['name']
         split_strings = (last_action.split())
         if split_strings[1] == "hours" and int(split_strings[0]) > 10:
-            inactives.append(player_name + " [" + torn_id + '] ' + last_action)
+            inactive_players.append(player_name + " [" + torn_id + '] ' + last_action)
         elif split_strings[1] == "day" or split_strings[1] == "days":
-            inactives.append(player_name + " [" + torn_id + '] ' + last_action)
+            inactive_players.append(player_name + " [" + torn_id + '] ' + last_action)
     send_string = "Players Inactive for 4 hours or more: \n ```"
-    for state in inactives:
+    for state in inactive_players:
         send_string = (send_string + " " + state + " " + "\n")
     await ctx.send(send_string + "```")
 
@@ -339,7 +343,7 @@ async def donators(ctx, factionid):
         return
     await ctx.send('Please wait, generating list.')
     members = parsedJSON["members"]
-    donators = []
+    donator_list = []
     for torn_id in members:
         donator = False
         property = False
@@ -356,9 +360,9 @@ async def donators(ctx, factionid):
             property = True
             prop_string = (" Property - " + data["property"])
         if donator is True or property is True:
-            donators.append(playerName + ": " + donate_string + " " + prop_string)
+            donator_list.append(playerName + ": " + donate_string + " " + prop_string)
     send_string = "Players without Donator Status or PI: \n ```"
-    for string in donators:
+    for string in donator_list:
         send_string = (send_string + " " + string + " " + "\n")
     await ctx.send(send_string + "```")
 
@@ -367,6 +371,7 @@ async def donators(ctx, factionid):
 async def donators_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You must include a faction ID.\nExample: !donators 11747')
+
 
 @bot.command()
 async def help(ctx):
@@ -425,6 +430,7 @@ async def verify(ctx, tornid):
 async def verify_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send("You must include a player ID\nExample: !verify 2003693")
+
 
 @bot.command()
 async def getchannelinfo(ctx):
