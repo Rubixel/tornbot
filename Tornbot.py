@@ -27,7 +27,7 @@ shutdown = False
 leslie_ready = False
 duke_ready = False
 # testing mode, for testing only one thing so it doesnt interfere with running bot
-testing_mode = True
+testing_mode = False
 council_plus = ["ns leaders", "ns council i", "ns council ii", "ns council iii", "ns ii leaders"]
 admin_users = [200676892024504320, 547926928313548801, 547986194055692289]
 bloodBagChannel = ""
@@ -210,6 +210,8 @@ async def on_ready():
     print("Start time: " + str(time.time()))
     print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
     print("Tornbot.py is ready.")
+    if testing_mode is True
+        print("Testing mode is Enabled")
     print("================================")
     await timer()
 
