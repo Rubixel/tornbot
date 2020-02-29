@@ -9,6 +9,7 @@ import random
 #remove bot_keys
 import bot_keys
 
+# Code written/used by: Hcom [2003603]. Hcom3#7142
 
 # bot info
 client = discord.Client()
@@ -19,7 +20,7 @@ bot_id = bot_keys.discord_bot_id
 
 #constants
 startTime = datetime.datetime.now()
-apiLimit = 85
+apiLimit = 80
 apiChecks = 0
 lastMinute = True
 armory_time_stamp = 0
@@ -28,23 +29,26 @@ leslie_ready = False
 duke_ready = False
 # testing mode, for testing only one thing so it doesnt interfere with running bot
 testing_mode = False
+# roles allowed to use commands
 council_plus = ["ns leaders", "ns council i", "ns council ii", "ns council iii", "ns ii leaders"]
+# discord IDs allowed to bypass permissions, WIP.
 admin_users = [200676892024504320, 547926928313548801, 547986194055692289]
 bloodBagChannel = ""
 npcChannel = ""
-timer_first = True
 debug = False
+bagTime = 0
+npcTime = 0
+printTime = 0
+randBully = 0
+# cycles between these
 bully_list = ["Hcom", "jukka", "Gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow",
               "STEVE_HOLT", "Rhino", "LTJELLOMAN", "Bones", "Roxy", "Everyone", "ttyper", "Vicarious", "Stretch",
               "Karen"]
 
-
+#used for debugging
 def printd(*args):
     if debug:
         print(args)
-
-
-# todo Comment all of the code before making repository public.
 
 # Limit API use function
 def apichecklimit():
@@ -71,11 +75,12 @@ def apichecklimit():
         print("Sleeping: 60s")
         time.sleep(60)
 
-
+# bloodbag function
 async def check_bags():
     global armory_time_stamp
     global bloodBagChannel
     temp_armory_time_stamp = 0
+    # currently in a try to catch a stupid bug
     try:
         r = requests.get('https://api.torn.com/faction/?selections=armorynews&key=%s' % apiKey)
         armory_logs = json.loads(r.text)["armorynews"]
@@ -111,7 +116,9 @@ async def check_bags():
         print("Error time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
 
 
-# todo add in bit of formatting for leslie & duke message: NPC_NAME will be at level four in etc etc...
+# todo edit NPC functions to prepare for the launch of the new NPCs
+
+# checks leslie, and if they are ready for attack
 async def check_leslie():
     global npcChannel
     global leslie_ready
@@ -124,31 +131,35 @@ async def check_leslie():
         return
     if four_time < 400 and leslie_ready is False:
         leslie_ready = True
+        # formats seconds left into minutes and seconds
         ready_minutes = str(four_time // 60)
         ready_seconds = str(four_time % 60)
         await npcChannel.send("Leslie will be ready in: " + ready_minutes + " minutes and " + ready_seconds + " "
-                                                                                                              "seconds! <@&612556617153511435>\n" + "https://www.torn.com/loader2.php?sid=get"
-                                                                                                                                                    "InAttack&user2ID=15")
+              "seconds! <@&612556617153511435>\n" + "https://www.torn.com/loader2.php?sid=getInAttack&user2ID=15")
 
-
+# checks duke, and if they are ready for attack
 async def check_duke():
     global npcChannel
     global duke_ready
     r = requests.get("https://yata.alwaysdata.net/loot/timings/")
     npc_info = json.loads(r.text)
     four_time = npc_info["4"]["timings"]["4"]["due"]
+    # four_time is how many seconds to level four, if its between 200 and 400 seconds it will print a message in the
+    # npcChannel
     if four_time < 0:
         duke_ready = False
     if four_time < 200:
         return
     if four_time < 400 and duke_ready is False:
         duke_ready = True
+        #formats seconds left into minutes and seconds
         ready_minutes = str(four_time // 60)
         ready_seconds = str(four_time % 60)
         await npcChannel.send("Duke will be ready in: " + ready_minutes + " minutes and " + ready_seconds + " "
         "seconds! <@&612556617153511435>\n" + "https://www.torn.com/loader2.php?sid=getInAttack&user2ID=4")
 
 
+# used for permission checking
 def check_council_roles(role_list):
     global council_plus
     for authorRole in role_list:
@@ -157,15 +168,12 @@ def check_council_roles(role_list):
                 return True
     return False
 
-
+# runs every 10 seconds, keeps all of the npcTimers, and blood bag timers, and a few other things running
 async def timer():
-    global timer_first
-    if timer_first is True:
-        time_first = False
-        bagTime = 0
-        npcTime = 0
-        printTime = 0
-        randBully = 0
+    global bagTime
+    global npcTime
+    global printTime
+    global randBully
     bagTime += 20
     npcTime += 20
     printTime += 20
@@ -178,6 +186,7 @@ async def timer():
         await check_duke()
         await check_leslie()
     if printTime >= 1800:
+        # used for debugging
         printTime = 0
         print("================================")
         print("Bi-hourly time:")
@@ -210,7 +219,7 @@ async def on_ready():
     print("Start time: " + str(time.time()))
     print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
     print("Tornbot.py is ready.")
-    if testing_mode is True
+    if testing_mode is True:
         print("Testing mode is Enabled")
     print("================================")
     await timer()
@@ -356,18 +365,29 @@ async def on_message(message):
             send_string = (send_string + " " + string + " " + "\n")
         await message.channel.send(send_string + "```")
     elif message.content == "!help":
-        # todo update todo to use embed format
-        # todo remove !bind commands
         if testing_mode is True:
             return
-        await message.channel.send(
-            "```css\nHelp screen:\n\nFaction:\n\t!onliners [faction_ID] -> Prints players active in the last five "
-            "minutes.ᴿ\n\t!inactives [faction_ID] -> Prints players inactive for over 10 hours.ᴿ\n\t!donators "
-            "[faction_ID]  -> Prints players without donator status, and or a PI.ᴿ\n\nPlayer:\n\t!torn [player_ID] -> "
-            "Prints a player's basic information & status.ᴿ\n\nMisc:\n\t!help -> Prints help screen.\n\t!bindbags -> "
-            "Posts all bloodbag filling info in this channel.ᴿ(Do not use twice, or it will break)\n\t!bindNPC -> "
-            "Prints NPC updates int his channel.ᴿ\n\t\tᴿIs restricted to council & leaders."
-            "```")
+        embed = discord.Embed(title="Help screen:", description="All availible commands:")
+        embed.set_thumbnail(url="https://i.imgur.com/JIsJGhb.png")
+        embed.add_field(name="!onliners [faction_ID]ᴿ", value="Prints players active in the last five minutes.",
+                        inline=True)
+        embed.add_field(name="!inactives [faction_ID]ᴿ", value="Prints players inactive for over 10 hours.",
+                        inline=True)
+        embed.add_field(name="!donators [faction_ID]ᴿ", value="Prints players without donator status, and or a PI.",
+                        inline=True)
+        embed.add_field(name="!torn [player_ID]ᴿ", value="Prints a player's basic information & status.", inline=True)
+        embed.add_field(name="!help", value="Prints help screen.", inline=True)
+        embed.add_field(name="!source", value="Prints github repository for BullyBot", inline=True)
+        embed.add_field(name="Restricted:", value="ᴿIs restricted to council/leaders/admins.", inline=True)
+        await message.channel.send(embed=embed)
+        #await message.channel.send(
+            #"```css\nHelp screen:\n\nFaction:\n\t!onliners [faction_ID] -> Prints players active in the last five "
+            #"minutes.ᴿ\n\t!inactives [faction_ID] -> Prints players inactive for over 10 hours.ᴿ\n\t!donators "
+           # "[faction_ID]  -> Prints players without donator status, and or a PI.ᴿ\n\nPlayer:\n\t!torn [player_ID] -> "
+            #"Prints a player's basic information & status.ᴿ\n\nMisc:\n\t!help -> Prints help screen.\n\t!bindbags -> "
+           # "Posts all bloodbag filling info in this channel.ᴿ(Do not use twice, or it will break)\n\t!bindNPC -> "
+          #  "Prints NPC updates int his channel.ᴿ\n\t\tᴿIs restricted to council & leaders."
+           # "```")
     elif message.content[0:7] == "!verifyBullyBot":
         verifyID = message.content[8:len(message.content)]
         tornname = json.loads(
@@ -402,7 +422,10 @@ async def on_message(message):
             return
         global shutdown
         shutdown = True
+    elif message.content == "!source":
+        message.channel.send("https://github.com/Rubixel/tornbot")
     elif message.content == "!getchannelinfo":
+        #used for assigning channels that the bot posts in
         if check_council_roles(message.author.roles) is False:
             await message.author.send("You do not have permissions to use this command: \"" + message.content + "\"")
         print(message.channel.id)
