@@ -7,16 +7,18 @@ import datetime
 import asyncio
 import random
 # remove bot_keys when
-import bot_keys
+import configparser
+config = configparser.ConfigParser()
+config.read("tornbot.ini")
 
 # Code written/used by: Hcom [2003603]. Hcom3#7142
 
 # bot info
 client = discord.Client()
 # replace with your own Torn API key in. apiKey = "TORN_API_KEY"
-apiKey = bot_keys.api_key
+apiKey = config['DEFAULT']['apikey']
 # replace with your own discord bot token in bot_id = "DISCORD_BOT_TOKEN"
-bot_id = bot_keys.discord_bot_id
+bot_id = ['DEFAULT']['token']
 
 # constants
 startTime = datetime.datetime.now()
