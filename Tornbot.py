@@ -126,7 +126,7 @@ async def check_npc():
                 ready_minutes = str(four_time // 60)
                 ready_seconds = str(four_time % 60)
                 await npcChannel.send(npc_name + " [" + npc_ids[npc_index[npc_name]] + "] will be at level 4 in: "
-                                      + ready_minutes + " mintues and " + ready_seconds + "seconds! "
+                                      + ready_minutes + " minutes and " + ready_seconds + "seconds! "
                                                                                           "<@&612556617153511435>\n "
                                       + "https://www.torn.com/loader2.php?sid=getInAttack&user2ID=" + npc_ids[
                                           npc_index[npc_name]])
