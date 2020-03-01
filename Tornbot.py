@@ -21,8 +21,6 @@ bot = commands.Bot(command_prefix="!")
 apiKey = bot_keys.apiKey
 # replace with your own discord bot token in botID = "DISCORD_BOT_TOKEN"
 botID = bot_keys.bot_id
-bloodBagChannel = bot.get_channel(645540955688271872)
-npcChannel = bot.get_channel(586185860505010176)
 startTime = datetime.datetime.now()
 bot.remove_command("help")
 if constants["botTestingMode"] is True:
@@ -68,6 +66,7 @@ def apichecklimit():
 
 
 async def checkNPC():
+    npcChannel = bot.get_channel(586185860505010176)
     r = requests.get("https://yata.alwaysdata.net/loot/timings/")
     npcRequest = json.loads(r.text)
     for i in npcRequest:
@@ -79,7 +78,7 @@ async def checkNPC():
         fourTime = npcTimes[npcName]
         if fourTime < 0:
             npcReady[npcName] = True
-        if 200 < fourTime < 400:
+        if 1 < fourTime < 400:
             if npcReady[npcName] is True:
                 readyMinutes = str(fourTime // 60)
                 readySeconds = str(fourTime % 60)
