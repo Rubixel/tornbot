@@ -9,6 +9,9 @@ import asyncio
 import random
 import bot_keys
 
+with open('config.json') as f:
+    constants = json.load(f)
+
 # Code written/used by: Hcom [2003603]. Hcom3#7142
 
 # bot info
@@ -16,128 +19,83 @@ bot = commands.Bot(command_prefix="!")
 
 # replace with your own Torn API key in. apiKey = "TORN_API_KEY"
 apiKey = bot_keys.apiKey
-# replace with your own discord bot token in bot_id = "DISCORD_BOT_TOKEN"
-bot_id = bot_keys.bot_id
-
-# constants
+# replace with your own discord bot token in botID = "DISCORD_BOT_TOKEN"
+botID = bot_keys.bot_id
+bloodBagChannel = bot.get_channel(645540955688271872)
+npcChannel = bot.get_channel(586185860505010176)
 startTime = datetime.datetime.now()
-apiLimit = 80
-apiChecks = 0
-lastMinute = True
-armory_time_stamp = 0
-shutdown = False
-leslie_ready = False
-duke_ready = False
-# testing mode, for testing only one thing so it doesnt interfere with running bot
-testing_mode = False
-bot_testing_mode = False
-if bot_testing_mode is True:
-    bot_id = bot_keys.testing_bot_id
 bot.remove_command("help")
-# roles allowed to use commands
-council_plus = ["ns leaders", "ns council i", "ns council ii", "ns council iii", "ns ii leaders"]
-# discord IDs allowed to bypass permissions, WIP.
-admin_users = [200676892024504320, 547926928313548801, 547986194055692289]
-bloodBagChannel = ""
-npcChannel = ""
-debug = False
-bagTime = 0
-npcTime = 0
-printTime = 0
-randBully = 0
-# !verify would interfere with NS discord verify, so its disabled through this
-block_verify = True
-on_ready_run = False
-# cycles between these for status
-bully_list = ["Hcom", "jukka", "Gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow", "STEVE_HOLT", "Rhino", "LTJELLOMAN",
-              "Bones", "Roxy", "Everyone", "ttyper", "Vicarious", "Stretch", "Karen", "Itself"]
-npc_list = ["Duke", "Leslie"]
-npc_index = {}
-bcount = 0
-for npc in npc_list:
-    npc_index[npc] = bcount
-    bcount += 1
-npc_ids = ["4", "15"]
-npc_times = {}
-npc_ready = {}
-inverse_npc_list = {}
+if constants["botTestingMode"] is True:
+    botID = bot_keys.testingBotID
+npcList = ["Duke", "Leslie"]
+npcIndex = {}
+npcTimes = {}
+npcReady = {}
+inverseNpcList = {}
+npcIDs = ["4", "15"]
 lcount = 0
-for npc in npc_list:
-    inverse_npc_list[lcount] = npc
+for npc in npcList:
+    npcIndex[npc] = lcount
+    inverseNpcList[lcount] = npc
+    npcTimes[npc] = 0
+    npcReady[npc] = True
     lcount += 1
-for npc in npc_list:
-    npc_times[npc] = 0
-    npc_ready[npc] = True
 
 
 # used for debugging
 def printd(*args):
-    if debug:
+    if constants['debug']:
         print(args)
 
 
 # Limit API use function
 def apichecklimit():
-    global apiLimit
-    global apiChecks
-    global lastMinute
-    now = datetime.datetime.now()
     # takes current time
-    currentMinute = [int(now.year), int(now.month), int(now.day), int(now.hour), int(now.minute), int(now.second)]
+    currentMinute = time.time()
     # sees if API has been called at all
-    if lastMinute is True:
-        now = datetime.datetime.now()
-        lastMinute = [int(now.year), int(now.month), int(now.day), int(now.hour), int(now.minute), int(now.second)]
+    if constants["lastMinute"] is True:
+        constants["lastMinute"] = time.time()
         return
-    # checks if it has been longer than a minute since last API call, if it has reset apiChecks since limit is back to 0
-    if lastMinute[0] < currentMinute[0] or lastMinute[1] < currentMinute[1] or lastMinute[2] < currentMinute[2] or \
-            lastMinute[3] < currentMinute[3] or lastMinute[4] + 2 < currentMinute[4] or (
-            lastMinute[4] + 1 <= currentMinute[4] and lastMinute[5] < currentMinute[5] + 1):
-        apiChecks = 0
-        lastMinute = currentMinute
-    apiChecks = apiChecks + 1
+    # checks if it has been longer than a minute since last API call, if it has reset constants["apiChecks"] since limit is back to 0
+    if constants["lastMinute"] + 61 < currentMinute:
+        constants["apiChecks"] = 0
+        constants["lastMinute"] = currentMinute
+    constants["apiChecks"] = constants["apiChecks"] + 1
     # if too many calls make program sleep to refresh the limit
-    if apiChecks >= apiLimit:
+    if constants["apiChecks"] >= constants["apiLimit"]:
         print("Sleeping: 60s")
-        time.sleep(60)
+        asyncio.sleep(60)
 
 
-async def check_npc():
-    global npcChannel
-    global npc_list
-    global npc_times
-    global npc_ready
-    global inverse_npc_list
-    global npc_ids
-    global npc_index
+async def checkNPC():
     r = requests.get("https://yata.alwaysdata.net/loot/timings/")
-    npc_request = json.loads(r.text)
-    for i in npc_request:
-        npc_info = npc_request[i]
-        npc_name = npc_info["name"]
-        npc_times[npc_name] = npc_info["timings"]["4"]["due"]
-    for inverse_npc in inverse_npc_list:
-        npc_name = npc_list[int(inverse_npc)]
-        four_time = npc_times[npc_name]
-        if four_time < 0:
-            npc_ready[npc_name] = True
-        if 200 < four_time < 400:
-            if npc_ready[npc_name] is True:
-                ready_minutes = str(four_time // 60)
-                ready_seconds = str(four_time % 60)
-                await npcChannel.send(npc_name + " [" + npc_ids[npc_index[npc_name]] + "] will be at level 4 in: "
-                                      + ready_minutes + " minutes and " + ready_seconds + "seconds! "
-                                                                                          "<@&612556617153511435>\n "
-                                      + "https://www.torn.com/loader2.php?sid=getInAttack&user2ID=" + npc_ids[
-                                          npc_index[npc_name]])
-                npc_ready[npc_name] = False
+    npcRequest = json.loads(r.text)
+    for i in npcRequest:
+        npcInfo = npcRequest[i]
+        npcName = npcInfo["name"]
+        npcTimes[npcName] = npcInfo["timings"]["4"]["due"]
+    for inverseNpc in inverseNpcList:
+        npcName = npcList[int(inverseNpc)]
+        fourTime = npcTimes[npcName]
+        if fourTime < 0:
+            npcReady[npcName] = True
+        if 200 < fourTime < 400:
+            if npcReady[npcName] is True:
+                readyMinutes = str(fourTime // 60)
+                readySeconds = str(fourTime % 60)
+                npcSendTime = "Ready to be attacked in: " + readyMinutes + " minutes and " + readySeconds + " seconds."
+                embed = discord.Embed(title="Duke [4]", color=0xae0000)
+                embed.set_thumbnail(url=constants["npcImageLinks"][inverseNpc])
+                embed.add_field(name="Ready to be attacked in: ", value=npcSendTime, inline=False)
+                await npcChannel.send("<@&612556617153511435>")
+                await npcChannel.send(embed=embed)
+                npcReady[npcName] = False
 
 
 # used for permission checking
-def check_council_roles(role_list):
-    global council_plus
-    for authorRole in role_list:
-        for councilRole in council_plus:
+def checkCouncilRoles(roleList):
+    for authorRole in roleList:
+        for councilRole in constants["councilPlus"]:
             if authorRole.name.lower() == councilRole:
                 return True
     return False
@@ -145,27 +103,24 @@ def check_council_roles(role_list):
 
 # runs every 10 seconds, keeps all of the npcTimers, and blood bag timers, and a few other things running
 async def timer():
-    global npcTime
-    global printTime
-    global randBully
-    npcTime += 20
-    printTime += 20
-    randBully += 20
-    if npcTime >= 100:
-        npcTime = 0
-        await check_npc()
-    if printTime >= 1800:
+    constants["npcTime"] += 20
+    constants["printTime"] += 20
+    constants["randBully"] += 20
+    if constants["npcTime"] >= 100:
+        constants["npcTime"] = 0
+        await checkNPC()
+    if constants["printTime"] >= 1800:
         # used for debugging
-        printTime = 0
+        constants["printTime"] = 0
         print("================================")
         print("Bi-hourly time:")
         print("Start time: " + str(time.time()))
         print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(1347517370))))
-    if randBully >= 3600:
-        randBully = 0
+    if constants["randBully"] >= 3600:
+        constants["randBully"] = 0
         random.seed()
-        rand = random.randrange(0, len(bully_list))
-        await bot.change_presence(activity=discord.Game('Bullying ' + bully_list[rand] + "!"))
+        rand = random.randrange(0, len(constants["bullyList"]))
+        await bot.change_presence(activity=discord.Game('Bullying ' + constants["bullyList"][rand] + "!"))
     await asyncio.sleep(20)
     await timer()
 
@@ -173,42 +128,36 @@ async def timer():
 @bot.event
 # on bot load
 async def on_ready():
-    global on_ready_run
-    if on_ready_run is False:
-        on_ready_run = True
-        printd("on ready")
-        global bully_list
+    if constants["onReadyRun"] is False:
+        constants["onReadyRun"] = True
         random.seed()
-        rand = random.randrange(0, len(bully_list))
-        await bot.change_presence(activity=discord.Game('Bullying ' + bully_list[rand] + "!"))
-        global bloodBagChannel
-        bloodBagChannel = bot.get_channel(645540955688271872)
-        global npcChannel
-        npcChannel = bot.get_channel(586185860505010176)
+        rand = random.randrange(0, len(constants["bullyList"]))
+        await bot.change_presence(activity=discord.Game('Bullying ' + constants["bullyList"][rand] + "!"))
+
         print("================================")
         print("Start time: " + str(time.time()))
         print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
         print("Tornbot.py is ready.")
-        if testing_mode is True:
+        if constants["testingMode"] is True:
             print("Testing mode is Enabled")
         print("================================")
-        await check_npc()
+        await checkNPC()
         await timer()
 
 
 @bot.command()
-async def torn(ctx, player_id):
-    if check_council_roles(ctx.author.roles) is False:
+async def torn(ctx, playerID):
+    if checkCouncilRoles(ctx.author.roles) is False:
         await ctx.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
         return
-    if testing_mode is True:
+    if constants["testingMode"] is True:
         return
-    if player_id.isdigit() is False:
-        await ctx.send(player_id + " is not a valid playerID!")
+    if playerID.isdigit() is False:
+        await ctx.send(playerID + " is not a valid playerID!")
         return
-    idtocheck = player_id
+    idtocheck = playerID
     if idtocheck == "":
-        await ctx.send("Error: Player ID missing. Correct usage: !torn [player_id]")
+        await ctx.send("Error: Player ID missing. Correct usage: !torn [playerID]")
         return
     r = requests.get('https://api.torn.com/user/' + idtocheck + '?selections=basic&key=%s' % apiKey)
     apichecklimit()
@@ -223,23 +172,23 @@ async def torn(ctx, player_id):
 
 
 @torn.error
-async def torn_error(ctx, error):
+async def tornError(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You must include a player ID.\nExample: !torn 2003693')
 
 
 @bot.command()
 async def onliners(ctx, factionid):
-    if check_council_roles(ctx.author.roles) is False:
+    if checkCouncilRoles(ctx.author.roles) is False:
         await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
         return
-    if testing_mode is True:
+    if constants["testingMode"] is True:
         return
     if factionid.isdigit() is False:
         await ctx.send(factionid + " is not a valid factionID!")
         return
     if factionid == "":
-        await ctx.send("Error: Faction ID missing. Correct usage: !onliners [faction_id]")
+        await ctx.send("Error: Faction ID missing. Correct usage: !onliners [factionID]")
         return
     r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
     apichecklimit()
@@ -249,23 +198,24 @@ async def onliners(ctx, factionid):
         await ctx.send('Error: Invalid Faction ID')
         return
     members = parsedJSON["members"]
-    onliner_list = []
+    onlinerList = []
+    print("list")
     await ctx.send('Please wait, generating list.')
-    for torn_id in members:
-        player_info = members[torn_id]
-        last_action = player_info["last_action"]["relative"]
-        player_name = player_info['name']
-        split_strings = (last_action.split())
-        if split_strings[1] == "minutes" and int(split_strings[0]) < 6:
-            onliner_list.append(player_name + " [" + torn_id + '] ' + last_action)
-    send_string = "Players online in the past 5 minutes: \n ```"
-    for state in onliner_list:
-        send_string = (send_string + " " + state + " " + "\n")
-    await ctx.send(send_string + '```')
+    for tornID in members:
+        playerInfo = members[tornID]
+        lastAction = playerInfo["last_action"]["relative"]
+        playerName = playerInfo['name']
+        splitStrings = (lastAction.split())
+        if splitStrings[1] == "minutes" and int(splitStrings[0]) < 6:
+            onlinerList.append(playerName + " [" + tornID + '] ' + lastAction)
+    sendString = "Players online in the past 5 minutes: \n ```"
+    for state in onlinerList:
+        sendString = (sendString + " " + state + " " + "\n")
+    await ctx.send(sendString + '```')
 
 
-@bot.event
-async def onliners_error(ctx, error):
+@onliners.error
+async def onlinersError(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You must include a faction ID.\nExample: !onliners 11747')
 
@@ -279,16 +229,16 @@ async def on_command_error(ctx, error):
 # prints faction inactives
 @bot.command()
 async def inactives(ctx, factionid):
-    if check_council_roles(ctx.author.roles) is False:
+    if checkCouncilRoles(ctx.author.roles) is False:
         await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
         return
-    if testing_mode is True:
+    if constants["testingMode"] is True:
         return
     if factionid.isdigit() is False:
         await ctx.send(factionid + " is not a valid factionID!")
         return
     if factionid == "":
-        await ctx.send("Error: Faction ID missing. Correct usage: !inactives [faction_id]")
+        await ctx.send("Error: Faction ID missing. Correct usage: !inactives [factionID]")
         return
     r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
     apichecklimit()
@@ -297,42 +247,43 @@ async def inactives(ctx, factionid):
     if parsedJSON['best_chain'] == 0:
         await ctx.send('Error: Invalid Faction ID')
         return
-    inactive_players = []
+    inactivePlayers = []
     members = parsedJSON["members"]
     await ctx.send('Please wait, generating list.')
-    for torn_id in members:
-        player_info = members[torn_id]
-        last_action = player_info["last_action"]["relative"]
-        player_name = player_info['name']
-        split_strings = (last_action.split())
-        if split_strings[1] == "hours" and int(split_strings[0]) > 10:
-            inactive_players.append(player_name + " [" + torn_id + '] ' + last_action)
-        elif split_strings[1] == "day" or split_strings[1] == "days":
-            inactive_players.append(player_name + " [" + torn_id + '] ' + last_action)
-    send_string = "Players Inactive for 4 hours or more: \n ```"
-    for state in inactive_players:
-        send_string = (send_string + " " + state + " " + "\n")
-    await ctx.send(send_string + "```")
+    for tornID in members:
+        playerInfo = members[tornID]
+        lastAction = playerInfo["last_action"]["relative"]
+        playerName = playerInfo['name']
+        splitStrings = (lastAction.split())
+        if splitStrings[1] == "hours" and int(splitStrings[0]) > 10:
+            inactivePlayers.append(playerName + " [" + tornID + '] ' + lastAction)
+        elif splitStrings[1] == "day" or splitStrings[1] == "days":
+            inactivePlayers.append(playerName + " [" + tornID + '] ' + lastAction)
+    sendString = "Players Inactive for 4 hours or more: \n ```"
+    for state in inactivePlayers:
+        sendString = (sendString + " " + state + " " + "\n")
+    await ctx.send(sendString + "```")
 
 
 @inactives.error
-async def inactives_error(ctx, error):
+async def inactiveError(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You must include a faction ID.\nExample: !inactives 11747')
 
 
 @bot.command()
+# todo donators formatting could use some work
 async def donators(ctx, factionid):
-    if check_council_roles(ctx.author.roles) is False:
+    if checkCouncilRoles(ctx.author.roles) is False:
         await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
         return
-    if testing_mode is True:
+    if constants["testingMode"] is True:
         return
     if factionid.isdigit() is False:
         await ctx.send(factionid + " is not a valid factionID!")
         return
     if factionid == "":
-        await ctx.send("Error: Faction ID missing. Correct usage: !donators [faction_id]")
+        await ctx.send("Error: Faction ID missing. Correct usage: !donators [factionID]")
         return
     r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
     apichecklimit()
@@ -343,49 +294,49 @@ async def donators(ctx, factionid):
         return
     await ctx.send('Please wait, generating list.')
     members = parsedJSON["members"]
-    donator_list = []
-    for torn_id in members:
+    donatorList = []
+    for tornID in members:
         donator = False
         property = False
         apichecklimit()
-        data = json.loads(requests.get('https://api.torn.com/user/' + torn_id + '?selections=profile&key=%s' %
+        data = json.loads(requests.get('https://api.torn.com/user/' + tornID + '?selections=profile&key=%s' %
                                        apiKey).text)
         playerName = data["name"]
-        prop_string = ""
-        donate_string = ""
+        propString = ""
+        donateString = ""
         if data["donator"] == 0:
             donator = True
-            donate_string = " Donator - False"
+            donateString = " Donator - False"
         if data["property"] != "Private Island":
             property = True
-            prop_string = (" Property - " + data["property"])
+            propString = (" Property - " + data["property"])
         if donator is True or property is True:
-            donator_list.append(playerName + ": " + donate_string + " " + prop_string)
-    send_string = "Players without Donator Status or PI: \n ```"
-    for string in donator_list:
-        send_string = (send_string + " " + string + " " + "\n")
-    await ctx.send(send_string + "```")
+            donatorList.append(playerName + ": " + donateString + " " + propString)
+    sendString = "Players without Donator Status or PI: \n ```"
+    for string in donatorList:
+        sendString = (sendString + " " + string + " " + "\n")
+    await ctx.send(sendString + "```")
 
 
 @donators.error
-async def donators_error(ctx, error):
+async def donatorError(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You must include a faction ID.\nExample: !donators 11747')
 
 
 @bot.command()
 async def help(ctx):
-    if testing_mode is True:
+    if constants["testingMode"] is True:
         return
-    embed = discord.Embed(title="Help screen:", description="All availible commands:")
+    embed = discord.Embed(title="Help screen:", description="All available commands:")
     embed.set_thumbnail(url="https://i.imgur.com/JIsJGhb.png")
-    embed.add_field(name="!onliners [faction_ID]ᴿ", value="Prints players active in the last five minutes.",
+    embed.add_field(name="!onliners [factionID]ᴿ", value="Prints players active in the last five minutes.",
                     inline=True)
-    embed.add_field(name="!inactives [faction_ID]ᴿ", value="Prints players inactive for over 10 hours.",
+    embed.add_field(name="!inactives [factionID]ᴿ", value="Prints players inactive for over 10 hours.",
                     inline=True)
-    embed.add_field(name="!donators [faction_ID]ᴿ", value="Prints players without donator status, and or a PI.",
+    embed.add_field(name="!donators [factionID]ᴿ", value="Prints players without donator status, and or a PI.",
                     inline=True)
-    embed.add_field(name="!torn [player_ID]ᴿ", value="Prints a player's basic information & status.", inline=True)
+    embed.add_field(name="!torn [playerID]ᴿ", value="Prints a player's basic information & status.", inline=True)
     embed.add_field(name="!help", value="Prints help screen.", inline=True)
     embed.add_field(name="Restricted:", value="ᴿIs restricted to council/leaders/admins.", inline=True)
     await ctx.send(embed=embed)
@@ -393,8 +344,7 @@ async def help(ctx):
 
 @bot.command()
 async def verify(ctx, tornid):
-    global block_verify
-    if block_verify is True:
+    if constants["blockVerify"] is True:
         return
     if tornid.isdigit() is False:
         await ctx.send(tornid + " is not a valid playerID!")
@@ -435,10 +385,10 @@ async def verify_error(ctx, error):
 @bot.command()
 async def getchannelinfo(ctx):
     # used for assigning channels that the bot posts in
-    if check_council_roles(ctx.author.roles) is False:
+    if checkCouncilRoles(ctx.author.roles) is False:
         await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
     print(ctx.message.channel.id)
     print(ctx.message.author.id)
 
 
-bot.run(bot_id)
+bot.run(botID)
