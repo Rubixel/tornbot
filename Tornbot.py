@@ -78,16 +78,18 @@ async def checkNPC():
         fourTime = npcTimes[npcName]
         if fourTime < 0:
             npcReady[npcName] = True
-        if 1 < fourTime < 400:
+        if 200 < fourTime < 400:
             if npcReady[npcName] is True:
                 readyMinutes = str(fourTime // 60)
                 readySeconds = str(fourTime % 60)
-                npcSendTime = "Ready to be attacked in: " + readyMinutes + " minutes and " + readySeconds + " seconds."
-                embed = discord.Embed(title="Duke [4]", color=0xae0000)
+                npcSendName = npcName + " [" + npcIDs[npcIndex[npcName]] + "]"
+                npcSendTime = readyMinutes + " minutes and " + readySeconds + " seconds."
+                npcSendLink = "https://www.torn.com/loader.php?sid=attack&user2ID=" + npcIDs[npcIndex[npcName]]
+                embed = discord.Embed(title=npcSendName, color=0xae0000)
                 embed.set_thumbnail(url=constants["npcImageLinks"][inverseNpc])
                 embed.add_field(name="Ready to be attacked in: ", value=npcSendTime, inline=False)
-                await npcChannel.send("<@&612556617153511435>")
                 await npcChannel.send(embed=embed)
+                await npcChannel.send(npcSendLink + " <@&612556617153511435>")
                 npcReady[npcName] = False
 
 
@@ -198,7 +200,6 @@ async def onliners(ctx, factionid):
         return
     members = parsedJSON["members"]
     onlinerList = []
-    print("list")
     await ctx.send('Please wait, generating list.')
     for tornID in members:
         playerInfo = members[tornID]
