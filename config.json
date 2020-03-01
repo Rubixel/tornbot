@@ -3,7 +3,7 @@
   "apiChecks": 0,
   "lastMinute": true,
   "testingMode": false,
-  "botTestingMode": false,
+  "botTestingMode": true,
   "councilPlus": ["ns leaders", "ns council i", "ns council ii", "ns council iii", "ns ii leaders"],
   "adminUsers": [200676892024504320, 547926928313548801, 547986194055692289],
   "npcChannel": "",
@@ -14,5 +14,6 @@
   "blockVerify": true,
   "onReadyRun": false,
   "npcImageLinks": ["https://i.imgur.com/sCVrkbF.png", "https://i.imgur.com/JBTo4vA.png"],
+  "factionNames": {"NSI":9533,"NSII":11747,"NSIII":12094,"JFK":3241,"CR":16628,"R*":8336,"IBB":2736,"SA":2013,"DA":231,"39thx": 16312,"39th": 19,"MnC": 7835,"FTW": 11581},
   "bullyList": ["Hcom", "jukka", "Gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow", "STEVE_HOLT", "Rhino", "LTJELLOMAN","Bones", "Roxy", "Everyone", "ttyper", "Vicarious", "Stretch", "Karen", "Itself"]
 }

@@ -62,7 +62,7 @@ def apichecklimit():
     # if too many calls make program sleep to refresh the limit
     if constants["apiChecks"] >= constants["apiLimit"]:
         print("Sleeping: 60s")
-        asyncio.sleep(60)
+        time.sleep(60)
 
 
 async def checkNPC():
@@ -99,6 +99,14 @@ def checkCouncilRoles(roleList):
         for councilRole in constants["councilPlus"]:
             if authorRole.name.lower() == councilRole:
                 return True
+    return False
+
+
+def checkFactionNames(s):
+    factions = constants["factionNames"]
+    for faction in factions:
+        if faction.lower() == s.lower():
+            return constants["factionNames"][s]
     return False
 
 
@@ -185,6 +193,9 @@ async def onliners(ctx, factionid):
         return
     if constants["testingMode"] is True:
         return
+    factionPass = checkFactionNames(factionid)
+    if factionPass:
+        factionid = str(factionPass)
     if factionid.isdigit() is False:
         await ctx.send(factionid + " is not a valid factionID!")
         return
@@ -196,7 +207,6 @@ async def onliners(ctx, factionid):
     parsedJSON = json.loads(r.text)
     # checks if faction exists
     if parsedJSON['best_chain'] == 0:
-        print("error bestchain = 0")
         await ctx.send('Error: Invalid Faction ID')
         return
     members = parsedJSON["members"]
@@ -235,6 +245,9 @@ async def inactives(ctx, factionid):
         return
     if constants["testingMode"] is True:
         return
+    factionPass = checkFactionNames(factionid)
+    if factionPass:
+        factionid = str(factionPass)
     if factionid.isdigit() is False:
         await ctx.send(factionid + " is not a valid factionID!")
         return
@@ -280,6 +293,9 @@ async def donators(ctx, factionid):
         return
     if constants["testingMode"] is True:
         return
+    factionPass = checkFactionNames(factionid)
+    if factionPass:
+        factionid = str(factionPass)
     if factionid.isdigit() is False:
         await ctx.send(factionid + " is not a valid factionID!")
         return
