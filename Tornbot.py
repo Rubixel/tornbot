@@ -194,20 +194,13 @@ async def onliners(ctx, factionid):
     r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
     apichecklimit()
     parsedJSON = json.loads(r.text)
-    print("passed json.loads")
     # checks if faction exists
-    print(parsedJSON)
-    print(parsedJSON['best_chain'])
     if parsedJSON['best_chain'] == 0:
         print("error bestchain = 0")
         await ctx.send('Error: Invalid Faction ID')
         return
     members = parsedJSON["members"]
-    print(members)
     onlinerList = []
-    print("Onliners")
-    print(onlinerList)
-    print("generating")
     await ctx.send('Please wait, generating list.')
     for tornID in members:
         playerInfo = members[tornID]
