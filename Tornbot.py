@@ -173,7 +173,7 @@ async def torn(ctx, playerID):
 
 
 @torn.error
-async def tornError(ctx, error):
+async def torn_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You must include a player ID.\nExample: !torn 2003693')
 
@@ -183,23 +183,30 @@ async def onliners(ctx, factionid):
     if checkCouncilRoles(ctx.author.roles) is False:
         await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
         return
+    print(constants)
+    print(constants["testingMode"])
+    print(factionid)
     if constants["testingMode"] is True:
         return
     if factionid.isdigit() is False:
         await ctx.send(factionid + " is not a valid factionID!")
         return
+    print("passed isdigit")
     if factionid == "":
         await ctx.send("Error: Faction ID missing. Correct usage: !onliners [factionID]")
         return
+    print("passed factionID test")
     r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
     apichecklimit()
     parsedJSON = json.loads(r.text)
+    print("passed json.loads")
     # checks if faction exists
     if parsedJSON['best_chain'] == 0:
         await ctx.send('Error: Invalid Faction ID')
         return
     members = parsedJSON["members"]
     onlinerList = []
+    print("generating")
     await ctx.send('Please wait, generating list.')
     for tornID in members:
         playerInfo = members[tornID]
@@ -215,7 +222,7 @@ async def onliners(ctx, factionid):
 
 
 @onliners.error
-async def onlinersError(ctx, error):
+async def onliners_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You must include a faction ID.\nExample: !onliners 11747')
 
@@ -266,7 +273,7 @@ async def inactives(ctx, factionid):
 
 
 @inactives.error
-async def inactiveError(ctx, error):
+async def inactive_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You must include a faction ID.\nExample: !inactives 11747')
 
@@ -319,7 +326,7 @@ async def donators(ctx, factionid):
 
 
 @donators.error
-async def donatorError(ctx, error):
+async def donator_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You must include a faction ID.\nExample: !donators 11747')
 
