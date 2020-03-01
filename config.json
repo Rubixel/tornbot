@@ -1,0 +1,18 @@
+{
+  "apiLimit": 80,
+  "apiChecks": 0,
+  "lastMinute": true,
+  "testingMode": false,
+  "botTestingMode": false,
+  "councilPlus": ["ns leaders", "ns council i", "ns council ii", "ns council iii", "ns ii leaders"],
+  "adminUsers": [200676892024504320, 547926928313548801, 547986194055692289],
+  "npcChannel": "",
+  "debug": false,
+  "npcTime": 0,
+  "printTime": 0,
+  "randBully": 0,
+  "blockVerify": true,
+  "onReadyRun": false,
+  "npcImageLinks": ["https://i.imgur.com/sCVrkbF.png", "https://i.imgur.com/JBTo4vA.png"],
+  "bullyList": ["Hcom", "jukka", "Gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow", "STEVE_HOLT", "Rhino", "LTJELLOMAN","Bones", "Roxy", "Everyone", "ttyper", "Vicarious", "Stretch", "Karen", "Itself"]
+}
