@@ -1,6 +1,6 @@
 # imports
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import json
 import requests
 import time
@@ -8,9 +8,12 @@ import datetime
 import asyncio
 import random
 import bot_keys
+import os
+from itertools import cycle
 
 with open('config.json') as f:
     constants = json.load(f)
+# todo bring back some "constants" that need to change in the code
 
 # Code written/used by: Hcom [2003603]. Hcom3#7142
 
@@ -54,7 +57,7 @@ def apichecklimit():
     if constants["lastMinute"] is True:
         constants["lastMinute"] = time.time()
         return
-    # checks if it has been longer than a minute since last API call, if it has reset constants["apiChecks"] since limit is back to 0
+    # checks if it has been longer than a minute since last API call,
     if constants["lastMinute"] + 61 < currentMinute:
         constants["apiChecks"] = 0
         constants["lastMinute"] = currentMinute
@@ -111,6 +114,7 @@ def checkFactionNames(s):
 
 
 # runs every 10 seconds, keeps all of the npcTimers, and blood bag timers, and a few other things running
+@tasks.loop(seconds=20)
 async def timer():
     constants["npcTime"] += 20
     constants["printTime"] += 20
@@ -124,18 +128,15 @@ async def timer():
         print("================================")
         print("Bi-hourly time:")
         print("Start time: " + str(time.time()))
-        print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(1347517370))))
-    if constants["randBully"] >= 3600:
+        print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
+    if constants["randBully"] >= 40:
         constants["randBully"] = 0
         random.seed()
         rand = random.randrange(0, len(constants["bullyList"]))
         await bot.change_presence(activity=discord.Game('Bullying ' + constants["bullyList"][rand] + "!"))
-    await asyncio.sleep(20)
-    await timer()
 
 
 @bot.event
-# on bot load
 async def on_ready():
     if constants["onReadyRun"] is False:
         constants["onReadyRun"] = True
@@ -151,7 +152,6 @@ async def on_ready():
             print("Testing mode is Enabled")
         print("================================")
         await checkNPC()
-        await timer()
 
 
 @bot.command()
@@ -164,11 +164,7 @@ async def torn(ctx, playerID):
     if playerID.isdigit() is False:
         await ctx.send(playerID + " is not a valid playerID!")
         return
-    idtocheck = playerID
-    if idtocheck == "":
-        await ctx.send("Error: Player ID missing. Correct usage: !torn [playerID]")
-        return
-    r = requests.get('https://api.torn.com/user/' + idtocheck + '?selections=basic&key=%s' % apiKey)
+    r = requests.get('https://api.torn.com/user/' + playerID + '?selections=basic&key=%s' % apiKey)
     apichecklimit()
     info = json.loads(r.text)
     if '{"error": {"code": 6, "error": "Incorrect ID"}}' == json.dumps(info):
@@ -273,7 +269,7 @@ async def inactives(ctx, factionid):
             inactivePlayers.append(playerName + " [" + tornID + '] ' + lastAction)
         elif splitStrings[1] == "day" or splitStrings[1] == "days":
             inactivePlayers.append(playerName + " [" + tornID + '] ' + lastAction)
-    sendString = "Players Inactive for 4 hours or more: \n ```"
+    sendString = "Players Inactive for 10 hours or more: \n ```"
     for state in inactivePlayers:
         sendString = (sendString + " " + state + " " + "\n")
     await ctx.send(sendString + "```")
@@ -384,7 +380,7 @@ async def verify(ctx, tornid):
             + "<@" + str(ctx.author.id) + ">")
     elif discordID != str(ctx.author.id):
         await ctx.channel.send(
-            tornname + " [" + verifyID + "] is associated with another discod account. Please verify with your "
+            tornname + " [" + verifyID + "] is associated with another discord account. Please verify with your "
                                          "Discord account in Torn's Discord server: https://discordapp.com/invite/"
                                          "TVstvww " + "<@" +
             str(ctx.author.id) + ">")
@@ -406,6 +402,25 @@ async def getchannelinfo(ctx):
         await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
     print(ctx.message.channel.id)
     print(ctx.message.author.id)
+
+
+# todo put all of the cogs here or add a !refresh cogs command
+# todo check for admin IDs
+def userIsAdmin(user):
+    userID = user.id
+    for id in constants["adminUsers"]:
+        if id == userID:
+            return True
+    return False
+
+@bot.command()
+async def load(ctx, extention):
+    await ctx.send("Loaded " + extention)
+    bot.load_extention(f'cogs.{extention}')
+
+for filename in os.listdir('./cogs'):
+    if filename.endswith('.py'):
+       bot.load_extension(f'cogs.{filename[:-3]}')
 
 
 bot.run(botID)
