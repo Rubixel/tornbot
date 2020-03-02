@@ -5,11 +5,9 @@ import json
 import requests
 import time
 import datetime
-import asyncio
 import random
 import bot_keys
 import os
-from itertools import cycle
 
 with open('config.json') as f:
     constants = json.load(f)
@@ -99,9 +97,8 @@ async def checkNPC():
 # used for permission checking
 def checkCouncilRoles(roleList):
     for authorRole in roleList:
-        for councilRole in constants["councilPlus"]:
-            if authorRole.name.lower() == councilRole:
-                return True
+        if authorRole.name.lower() in constants["councilPlus"]:
+            return True
     return False
 
 
@@ -129,7 +126,7 @@ async def timer():
         print("Bi-hourly time:")
         print("Start time: " + str(time.time()))
         print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
-    if constants["randBully"] >= 40:
+    if constants["randBully"] >= 3600:
         constants["randBully"] = 0
         random.seed()
         rand = random.randrange(0, len(constants["bullyList"]))
@@ -151,7 +148,7 @@ async def on_ready():
         if constants["testingMode"] is True:
             print("Testing mode is Enabled")
         print("================================")
-        await checkNPC()
+        timer.start()
 
 
 @bot.command()
@@ -182,159 +179,10 @@ async def torn_error(ctx, error):
         await ctx.send('You must include a player ID.\nExample: !torn 2003693')
 
 
-@bot.command()
-async def onliners(ctx, factionid):
-    if checkCouncilRoles(ctx.author.roles) is False:
-        await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
-        return
-    if constants["testingMode"] is True:
-        return
-    factionPass = checkFactionNames(factionid)
-    if factionPass:
-        factionid = str(factionPass)
-    if factionid.isdigit() is False:
-        await ctx.send(factionid + " is not a valid factionID!")
-        return
-    if factionid == "":
-        await ctx.send("Error: Faction ID missing. Correct usage: !onliners [factionID]")
-        return
-    r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
-    apichecklimit()
-    parsedJSON = json.loads(r.text)
-    # checks if faction exists
-    if parsedJSON['best_chain'] == 0:
-        await ctx.send('Error: Invalid Faction ID')
-        return
-    members = parsedJSON["members"]
-    onlinerList = []
-    await ctx.send('Please wait, generating list.')
-    for tornID in members:
-        playerInfo = members[tornID]
-        lastAction = playerInfo["last_action"]["relative"]
-        playerName = playerInfo['name']
-        splitStrings = (lastAction.split())
-        if splitStrings[1] == "minutes" and int(splitStrings[0]) < 6:
-            onlinerList.append(playerName + " [" + tornID + '] ' + lastAction)
-    sendString = "Players online in the past 5 minutes: \n ```"
-    for state in onlinerList:
-        sendString = (sendString + " " + state + " " + "\n")
-    await ctx.send(sendString + '```')
-
-
-@onliners.error
-async def onliners_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('You must include a faction ID.\nExample: !onliners 11747')
-
-
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         return
-
-
-# prints faction inactives
-@bot.command()
-async def inactives(ctx, factionid):
-    if checkCouncilRoles(ctx.author.roles) is False:
-        await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
-        return
-    if constants["testingMode"] is True:
-        return
-    factionPass = checkFactionNames(factionid)
-    if factionPass:
-        factionid = str(factionPass)
-    if factionid.isdigit() is False:
-        await ctx.send(factionid + " is not a valid factionID!")
-        return
-    if factionid == "":
-        await ctx.send("Error: Faction ID missing. Correct usage: !inactives [factionID]")
-        return
-    r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
-    apichecklimit()
-    parsedJSON = json.loads(r.text)
-    # checks if faction exists
-    if parsedJSON['best_chain'] == 0:
-        await ctx.send('Error: Invalid Faction ID')
-        return
-    inactivePlayers = []
-    members = parsedJSON["members"]
-    await ctx.send('Please wait, generating list.')
-    for tornID in members:
-        playerInfo = members[tornID]
-        lastAction = playerInfo["last_action"]["relative"]
-        playerName = playerInfo['name']
-        splitStrings = (lastAction.split())
-        if splitStrings[1] == "hours" and int(splitStrings[0]) > 10:
-            inactivePlayers.append(playerName + " [" + tornID + '] ' + lastAction)
-        elif splitStrings[1] == "day" or splitStrings[1] == "days":
-            inactivePlayers.append(playerName + " [" + tornID + '] ' + lastAction)
-    sendString = "Players Inactive for 10 hours or more: \n ```"
-    for state in inactivePlayers:
-        sendString = (sendString + " " + state + " " + "\n")
-    await ctx.send(sendString + "```")
-
-
-@inactives.error
-async def inactive_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('You must include a faction ID.\nExample: !inactives 11747')
-
-
-@bot.command()
-# todo donators formatting could use some work
-async def donators(ctx, factionid):
-    if checkCouncilRoles(ctx.author.roles) is False:
-        await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
-        return
-    if constants["testingMode"] is True:
-        return
-    factionPass = checkFactionNames(factionid)
-    if factionPass:
-        factionid = str(factionPass)
-    if factionid.isdigit() is False:
-        await ctx.send(factionid + " is not a valid factionID!")
-        return
-    if factionid == "":
-        await ctx.send("Error: Faction ID missing. Correct usage: !donators [factionID]")
-        return
-    r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
-    apichecklimit()
-    parsedJSON = json.loads(r.text)
-    # checks if faction exists
-    if parsedJSON['best_chain'] == 0:
-        await ctx.send('Error: Invalid Faction ID')
-        return
-    await ctx.send('Please wait, generating list.')
-    members = parsedJSON["members"]
-    donatorList = []
-    for tornID in members:
-        donator = False
-        property = False
-        apichecklimit()
-        data = json.loads(requests.get('https://api.torn.com/user/' + tornID + '?selections=profile&key=%s' %
-                                       apiKey).text)
-        playerName = data["name"]
-        propString = ""
-        donateString = ""
-        if data["donator"] == 0:
-            donator = True
-            donateString = " Donator - False"
-        if data["property"] != "Private Island":
-            property = True
-            propString = (" Property - " + data["property"])
-        if donator is True or property is True:
-            donatorList.append(playerName + ": " + donateString + " " + propString)
-    sendString = "Players without Donator Status or PI: \n ```"
-    for string in donatorList:
-        sendString = (sendString + " " + string + " " + "\n")
-    await ctx.send(sendString + "```")
-
-
-@donators.error
-async def donator_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('You must include a faction ID.\nExample: !donators 11747')
 
 
 @bot.command()
@@ -404,23 +252,48 @@ async def getchannelinfo(ctx):
     print(ctx.message.author.id)
 
 
-# todo put all of the cogs here or add a !refresh cogs command
 # todo check for admin IDs
 def userIsAdmin(user):
-    userID = user.id
-    for id in constants["adminUsers"]:
-        if id == userID:
-            return True
-    return False
+    if user.id in constants["adminUsers"]:
+        return True
+    else:
+        return False
+
 
 @bot.command()
 async def load(ctx, extention):
+    if userIsAdmin(ctx.author) is False:
+        await ctx.atuhor.send("You need to be an administrator of the bot to use this command!")
+    if extention not in constants["cogNames"]:
+        await ctx.send("Cog " + extention + " not found!")
+        return
+    bot.load_extension(f'cogs.{extention}')
     await ctx.send("Loaded " + extention)
-    bot.load_extention(f'cogs.{extention}')
+
+
+@bot.command()
+async def unload(ctx, extention):
+    if userIsAdmin(ctx.author) is False:
+        await ctx.atuhor.send("You need to be an administrator of the bot to use this command!")
+    if extention not in constants["cogNames"]:
+        await ctx.send("Cog " + extention + " not found!")
+        return
+    bot.unload_extension(f'cogs.{extention}')
+    await ctx.send("Unloaded " + extention)
+
+
+@bot.command()
+async def reloadcogs(ctx):
+    if userIsAdmin(ctx.author) is False:
+        await ctx.atuhor.send("You need to be an administrator of the bot to use this command!")
+    for extention in constants["cogNames"]:
+        bot.unload_extension(f'cogs.{extention}')
+        bot.load_extension(f'cogs.{extention}')
+    await ctx.send("Cogs reloaded!")
+
 
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):
-       bot.load_extension(f'cogs.{filename[:-3]}')
-
+        bot.load_extension(f'cogs.{filename[:-3]}')
 
 bot.run(botID)
