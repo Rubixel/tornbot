@@ -8,7 +8,6 @@ from Tornbot import checkFactionNames, apiKey, checkCouncilRoles
 with open('config.json') as f:
     constants = json.load(f)
 
-
 def apichecklimit():
     # takes current time
     currentMinute = time.time()
@@ -174,7 +173,7 @@ class Faction(commands.Cog):
                 donatorList.append(playerName + ": " + donateString + propString)
         sendString = "Players without Donator Status or PI: \n ```"
         for string in donatorList:
-            sendString = (sendString + " " + string + " " + "\n")
+            sendString = sendString + " " + string + " " + "\n"
         await ctx.send(sendString + "```")
 
     @donators.error
