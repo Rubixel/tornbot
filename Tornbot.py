@@ -12,6 +12,8 @@ import os
 with open('config.json') as f:
     constants = json.load(f)
 
+# todo always check bot testing mode
+
 # Code written/used by: Hcom [2003603]. Hcom3#7142
 
 # bot info
