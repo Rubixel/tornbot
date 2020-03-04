@@ -8,21 +8,27 @@ from Tornbot import checkFactionNames, apiKey, checkCouncilRoles
 with open('config.json') as f:
     constants = json.load(f)
 
+
+lastMinute = ""
+apiChecks = 0
+
+
 def apichecklimit():
+    global lastMinute
+    global apiChecks
     # takes current time
     currentMinute = time.time()
     # sees if API has been called at all
-    if constants["lastMinute"] is True:
-        constants["lastMinute"] = time.time()
+    if lastMinute == "":
+        lastMinute = time.time()
         return
     # checks if it has been longer than a minute since last API call,
-    if constants["lastMinute"] + 61 < currentMinute:
+    if lastMinute + 61 < currentMinute:
         constants["apiChecks"] = 0
-        constants["lastMinute"] = currentMinute
+        lastMinute = currentMinute
     constants["apiChecks"] = constants["apiChecks"] + 1
     # if too many calls make program sleep to refresh the limit
     if constants["apiChecks"] >= constants["apiLimit"]:
-        print("Sleeping: 60s")
         time.sleep(60)
 
 
@@ -99,7 +105,6 @@ class Faction(commands.Cog):
             await ctx.send("Error: Faction ID missing. Correct usage: !inactives [factionID]")
             return
         r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
-        apichecklimit()
         parsedJSON = json.loads(r.text)
         # checks if faction exists
         if parsedJSON['best_chain'] == 0:
@@ -174,6 +179,8 @@ class Faction(commands.Cog):
         sendString = "Players without Donator Status or PI: \n ```"
         for string in donatorList:
             sendString = sendString + " " + string + " " + "\n"
+        if sendString == "``````":
+            sendString = "Everyone meets requirements!"
         await ctx.send(sendString + "```")
 
     @donators.error
