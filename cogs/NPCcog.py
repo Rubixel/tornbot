@@ -50,9 +50,8 @@ async def checkNPC():
                 embed = discord.Embed(title=npcSendName, color=0xae0000)
                 embed.set_thumbnail(url=constants["npcImageLinks"][inverseNpc])
                 embed.add_field(name="Ready to be attacked in: ", value=npcSendTime, inline=False)
-                #await npcChannel.send(embed=embed)
-                await npcChannel.send("Leslie test passed")
-             #   await npcChannel.send(npcSendLink + " <@&612556617153511435>")
+                await npcChannel.send(embed=embed)
+                await npcChannel.send(npcSendLink + " <@&612556617153511435>")
                 npcReady[npcName] = False
 
 
