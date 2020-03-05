@@ -185,7 +185,6 @@ class Faction(commands.Cog):
         sendString = ""
         for string in donatorList:
             sendString = sendString + " " + string + " " + "\n"
-        print(sendString)
         if sendString == "":
             sendString = "Everyone meets requirements!\n"
         await ctx.send("Players without Donator Status or PI: \n ```"+sendString + "```")
