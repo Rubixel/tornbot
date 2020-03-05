@@ -28,7 +28,6 @@ for npc in npcList:
       #  print(message)
 
 async def checkNPC():
-    print("checking npc")
     r = requests.get("https://yata.alwaysdata.net/loot/timings/")
     npcRequest = json.loads(r.text)
     for i in npcRequest:
