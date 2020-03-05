@@ -40,7 +40,7 @@ async def checkNPC():
         fourTime = npcTimes[npcName]
         if fourTime < 0:
             npcReady[npcName] = True
-        if 200 < fourTime < 3600:
+        if 200 < fourTime < 400:
             if npcReady[npcName] is True:
                 readyMinutes = str(fourTime // 60)
                 readySeconds = str(fourTime % 60)
