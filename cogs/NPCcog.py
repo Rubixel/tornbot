@@ -23,7 +23,12 @@ for npc in npcList:
     npcReady[npc] = True
     lcount += 1
 
+#async def clearMessages(bot, messages):
+    #for message in messages:
+      #  print(message)
+
 async def checkNPC():
+    print("checking npc")
     r = requests.get("https://yata.alwaysdata.net/loot/timings/")
     npcRequest = json.loads(r.text)
     for i in npcRequest:
@@ -35,7 +40,7 @@ async def checkNPC():
         fourTime = npcTimes[npcName]
         if fourTime < 0:
             npcReady[npcName] = True
-        if 200 < fourTime < 400:
+        if 200 < fourTime < 3600:
             if npcReady[npcName] is True:
                 readyMinutes = str(fourTime // 60)
                 readySeconds = str(fourTime % 60)
@@ -45,8 +50,9 @@ async def checkNPC():
                 embed = discord.Embed(title=npcSendName, color=0xae0000)
                 embed.set_thumbnail(url=constants["npcImageLinks"][inverseNpc])
                 embed.add_field(name="Ready to be attacked in: ", value=npcSendTime, inline=False)
-                await npcChannel.send(embed=embed)
-                await npcChannel.send(npcSendLink + " <@&612556617153511435>")
+                #await npcChannel.send(embed=embed)
+                await npcChannel.send("Leslie test passed")
+             #   await npcChannel.send(npcSendLink + " <@&612556617153511435>")
                 npcReady[npcName] = False
 
 
@@ -66,9 +72,13 @@ class Npc(commands.Cog):
         print("NPC Cog Ready!")
         global npcChannel
         npcChannel = self.bot.get_channel(685164100191649849)
+        #npcChannel = self.bot.get_channel(594322325852389397)
+        #print(npcChannel.name)
+       # print(npcChannel.get_messages())
+       # clearMessages(self.bot,npcChannel.messages)
         self.timer.start()
 
-    @tasks.loop(seconds=100)
+    @tasks.loop(seconds=10)
     async def timer(self):
         await checkNPC()
 
