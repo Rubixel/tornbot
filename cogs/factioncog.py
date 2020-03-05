@@ -3,7 +3,9 @@ from discord.ext import commands
 import json
 import requests
 import time
-from Tornbot import checkFactionNames, apiKey, checkCouncilRoles
+import asyncio
+from Tornbot import checkFactionNames, apiKey, checkCouncilRoles, fetch
+import aiohttp
 
 with open('config.json') as f:
     constants = json.load(f)
@@ -13,7 +15,7 @@ lastMinute = ""
 apiChecks = 0
 
 
-def apichecklimit():
+async def apichecklimit():
     global lastMinute
     global apiChecks
     # takes current time
@@ -24,12 +26,13 @@ def apichecklimit():
         return
     # checks if it has been longer than a minute since last API call,
     if lastMinute + 61 < currentMinute:
-        constants["apiChecks"] = 0
+        apiChecks = 0
         lastMinute = currentMinute
-    constants["apiChecks"] = constants["apiChecks"] + 1
+    apiChecks = apiChecks + 1
     # if too many calls make program sleep to refresh the limit
-    if constants["apiChecks"] >= constants["apiLimit"]:
-        time.sleep(60)
+    if apiChecks >= constants["apiLimit"]:
+        print("Sleeping 60s")
+        await asyncio.sleep(60)
 
 
 class Faction(commands.Cog):
@@ -61,9 +64,9 @@ class Faction(commands.Cog):
         if factionid == "":
             await ctx.send("Error: Faction ID missing. Correct usage: !onliners [factionID]")
             return
-        r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
-        apichecklimit()
-        parsedJSON = json.loads(r.text)
+        async with aiohttp.ClientSession() as session:
+            r = await fetch(session, 'https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
+        parsedJSON = json.loads(r)
         # checks if faction exists
         if parsedJSON['best_chain'] == 0:
             await ctx.send('Error: Invalid Faction ID')
@@ -104,8 +107,9 @@ class Faction(commands.Cog):
         if factionid == "":
             await ctx.send("Error: Faction ID missing. Correct usage: !inactives [factionID]")
             return
-        r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
-        parsedJSON = json.loads(r.text)
+        async with aiohttp.ClientSession() as session:
+            r = await fetch(session, 'https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
+        parsedJSON = json.loads(r)
         # checks if faction exists
         if parsedJSON['best_chain'] == 0:
             await ctx.send('Error: Invalid Faction ID')
@@ -149,9 +153,10 @@ class Faction(commands.Cog):
         if factionid == "":
             await ctx.send("Error: Faction ID missing. Correct usage: !donators [factionID]")
             return
-        r = requests.get('https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
-        apichecklimit()
-        parsedJSON = json.loads(r.text)
+        async with aiohttp.ClientSession() as session:
+            r = await fetch(session, 'https://api.torn.com/faction/' + factionid + '?selections=basic&key=%s' % apiKey)
+        parsedJSON = json.loads(r)
+        await apichecklimit()
         # checks if faction exists
         if parsedJSON['best_chain'] == 0:
             await ctx.send('Error: Invalid Faction ID')
@@ -162,9 +167,10 @@ class Faction(commands.Cog):
         for tornID in members:
             donator = False
             property = False
-            apichecklimit()
-            data = json.loads(requests.get('https://api.torn.com/user/' + tornID + '?selections=profile&key=%s' %
-                                           apiKey).text)
+            await apichecklimit()
+            async with aiohttp.ClientSession() as session:
+                r = await fetch(session,'https://api.torn.com/user/' + tornID + '?selections=profile&key=%s' %apiKey)
+            data = json.loads(r)
             playerName = data["name"]
             propString = ""
             donateString = ""
@@ -176,12 +182,13 @@ class Faction(commands.Cog):
                 propString = (" Property - " + data["property"])
             if donator is True or property is True:
                 donatorList.append(playerName + ": " + donateString + propString)
-        sendString = "Players without Donator Status or PI: \n ```"
+        sendString = ""
         for string in donatorList:
             sendString = sendString + " " + string + " " + "\n"
-        if sendString == "``````":
-            sendString = "Everyone meets requirements!"
-        await ctx.send(sendString + "```")
+        print(sendString)
+        if sendString == "":
+            sendString = "Everyone meets requirements!\n"
+        await ctx.send("Players without Donator Status or PI: \n ```"+sendString + "```")
 
     @donators.error
     async def donator_error(self, ctx, error):

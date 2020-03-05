@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands, tasks
 import json
+import aiohttp
+from Tornbot import fetch
 import requests
 
 with open('config.json') as f:
@@ -92,7 +94,6 @@ class Npc(commands.Cog):
                     fourTime % 60) + " seconds.\n"
             else:
                 sendmessage = sendmessage + npcName + ": Already Level Four\n"
-        # todo change it to DMs, and have it react
         await ctx.send(sendmessage)
 
 def setup(bot):
