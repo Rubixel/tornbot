@@ -65,7 +65,7 @@ class Npc(commands.Cog):
     async def on_ready(self):
         print("NPC Cog Ready!")
         global npcChannel
-        npcChannel = self.bot.get_channel(586185860505010176)
+        npcChannel = self.bot.get_channel(685164100191649849)
         self.timer.start()
 
     @tasks.loop(seconds=100)
