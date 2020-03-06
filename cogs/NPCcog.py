@@ -38,12 +38,14 @@ async def checkNPC():
     for inverseNpc in inverseNpcList:
         npcName = npcList[int(inverseNpc)]
         fourTime = npcTimes[npcName]
-        if fourTime > 10000 and npcReady[npcName] is False:
+        npcLevel = await getNpcLevel(npcName)
+        if npcLevel == "0" and npcReady[npcName] is False:
+            print(npcFourMessages[npcName])
             await npcFourMessages[npcName].delete()
             npcFourMessages[npcName] = None
             npcReady[npcName] = True
             return
-        if 100 < fourTime < 400:
+        if 200 < fourTime < 400:
             if npcReady[npcName] is True:
                 readyMinutes = str(fourTime // 60)
                 readySeconds = str(fourTime % 60)
@@ -140,12 +142,13 @@ class Npc(commands.Cog):
         print("NPC Cog Ready!")
         global npcChannel
         npcChannel = self.bot.get_channel(685164100191649849)
-        messages = await npcChannel.history(limit=1000).flatten()
-        await clearMessages(npcChannel, messages)
+        # npcChannel = self.bot.get_channel(594322325852389397)
+        await npcChannel.purge(limit=1000)
         await startNpcEmbeds(npcChannel)
         self.timer.start()
 
-    @tasks.loop(seconds=100)
+    # todo change to 100
+    @tasks.loop(seconds=20)
     async def timer(self):
         await refreshNpcEmbeds()
         await checkNPC()
