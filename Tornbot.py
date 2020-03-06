@@ -28,7 +28,7 @@ startTime = datetime.datetime.now()
 bot.remove_command("help")
 if constants["botTestingMode"] is True:
     botID = bot_keys.testingBotID
-    
+
 apiChecks = 0
 printTime = 0
 randBully = 0
@@ -65,6 +65,7 @@ async def apichecklimit():
     if apiChecks >= constants["apiLimit"]:
         print("Sleeping 60s")
         await asyncio.sleep(60)
+
 
 # used for permission checking
 def checkCouncilRoles(roleList):
@@ -130,7 +131,7 @@ async def torn(ctx, playerID):
         await ctx.send(playerID + " is not a valid playerID!")
         return
     async with aiohttp.ClientSession() as session:
-        r = await fetch(session, 'https://api.torn.com/user/' + playerID + '?selections=basic&key=%s'% apiKey)
+        r = await fetch(session, 'https://api.torn.com/user/' + playerID + '?selections=basic&key=%s' % apiKey)
     info = json.loads(r)
     if '{"error": {"code": 6, "error": "Incorrect ID"}}' == info:
         await ctx.send("Error: Incorrect ID")
@@ -181,11 +182,11 @@ async def verify(ctx, tornid):
     verifyID = tornid
     async with aiohttp.ClientSession() as session:
         tornname = await json.loads(fetch(session, 'https://api.torn.com/user/' + verifyID +
-                                              '?selections=basic&key=%s' % apiKey))["name"]
+                                          '?selections=basic&key=%s' % apiKey))["name"]
     async with aiohttp.ClientSession() as session:
         data = await json.loads(fetch(session, 'https://api.torn.com/user/' + verifyID +
-                                       '?selections=discord&key=%s' % apiKey
-                                   ))
+                                      '?selections=discord&key=%s' % apiKey
+                                      ))
     if '{"error": {"code": 6, "error": "Incorrect ID"}}' == json.dumps(data):
         await ctx.send("Error: Incorrect ID")
         return

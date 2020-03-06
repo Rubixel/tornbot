@@ -169,7 +169,7 @@ class Faction(commands.Cog):
             property = False
             await apichecklimit()
             async with aiohttp.ClientSession() as session:
-                r = await fetch(session,'https://api.torn.com/user/' + tornID + '?selections=profile&key=%s' %apiKey)
+                r = await fetch(session, 'https://api.torn.com/user/' + tornID + '?selections=profile&key=%s' %apiKey)
             data = json.loads(r)
             playerName = data["name"]
             propString = ""
