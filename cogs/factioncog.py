@@ -51,8 +51,6 @@ class Faction(commands.Cog):
         if checkCouncilRoles(ctx.author.roles) is False:
             await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
             return
-        if constants["testingMode"] is True:
-            return
         factionPass = checkFactionNames(factionid)
         if factionPass:
             factionid = str(factionPass)
@@ -93,8 +91,6 @@ class Faction(commands.Cog):
     async def inactives(self, ctx, factionid):
         if checkCouncilRoles(ctx.author.roles) is False:
             await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
-            return
-        if constants["testingMode"] is True:
             return
         factionPass = checkFactionNames(factionid)
         if factionPass:
@@ -139,8 +135,6 @@ class Faction(commands.Cog):
     async def donators(self, ctx, factionid):
         if checkCouncilRoles(ctx.author.roles) is False:
             await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
-            return
-        if constants["testingMode"] is True:
             return
         factionPass = checkFactionNames(factionid)
         if factionPass:
