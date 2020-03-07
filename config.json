@@ -1,6 +1,5 @@
 {
   "apiLimit": 80,
-  "testingMode": false,
   "botTestingMode": false,
   "councilPlus": ["ns leaders", "ns council i", "ns council ii", "ns council iii", "ns ii leaders"],
   "adminUsers": [200676892024504320, 547926928313548801, 547986194055692289],

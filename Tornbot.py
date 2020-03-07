@@ -18,7 +18,7 @@ with open('config.json') as f:
 # Code written/used by: Hcom [2003603]. Hcom3#7142
 
 # bot info
-bot = commands.Bot(command_prefix="!")
+bot = commands.Bot(command_prefix="bully")
 
 # replace with your own Torn API key in. apiKey = "TORN_API_KEY"
 apiKey = bot_keys.apiKey
@@ -114,8 +114,6 @@ async def on_ready():
         print("Start time: " + str(time.time()))
         print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
         print("Tornbot.py is ready.")
-        if constants["testingMode"] is True:
-            print("Testing mode is Enabled")
         print("================================")
         timer.start()
 
@@ -124,8 +122,6 @@ async def on_ready():
 async def torn(ctx, playerID):
     if checkCouncilRoles(ctx.author.roles) is False:
         await ctx.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
-        return
-    if constants["testingMode"] is True:
         return
     if playerID.isdigit() is False:
         await ctx.send(playerID + " is not a valid playerID!")
@@ -151,24 +147,24 @@ async def torn_error(ctx, error):
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
+        ctx.author.send("That is an invalid command!")
         return
 
 
 @bot.command()
 async def help(ctx):
-    if constants["testingMode"] is True:
-        return
     embed = discord.Embed(title="Help screen:", description="All available commands:")
     embed.set_thumbnail(url="https://i.imgur.com/JIsJGhb.png")
-    embed.add_field(name="!onliners [factionID]ᴿ", value="Prints players active in the last five minutes.",
+    embed.add_field(name="onliners [factionID]ᴿ", value="Prints players active in the last five minutes.",
                     inline=True)
-    embed.add_field(name="!inactives [factionID]ᴿ", value="Prints players inactive for over 10 hours.",
+    embed.add_field(name="inactives [factionID]ᴿ", value="Prints players inactive for over 10 hours.",
                     inline=True)
-    embed.add_field(name="!donators [factionID]ᴿ", value="Prints players without donator status, and or a PI.",
+    embed.add_field(name="donators [factionID]ᴿ", value="Prints players without donator status, and or a PI.",
                     inline=True)
-    embed.add_field(name="!torn [playerID]ᴿ", value="Prints a player's basic information & status.", inline=True)
-    embed.add_field(name="!help", value="Prints help screen.", inline=True)
-    embed.add_field(name="Restricted:", value="ᴿIs restricted to council/leaders/admins.", inline=True)
+    embed.add_field(name="torn [playerID]ᴿ", value="Prints a player's basic information & status.", inline=True)
+    embed.add_field(name="help", value="Prints help screen.", inline=True)
+    embed.add_field(name="npcs", value="Prints how much time is left before each NPC reaches level four.", inline=True)
+    embed.add_field(name="Restricted:", value="ᴿIs restricted to council/leaders/admins.\n", inline=True)
     await ctx.send(embed=embed)
 
 
