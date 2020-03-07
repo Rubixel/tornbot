@@ -37,12 +37,6 @@ async def checkNPC():
     for inverseNpc in inverseNpcList:
         npcName = npcList[int(inverseNpc)]
         fourTime = npcTimes[npcName]
-        for name in npcFourMessages:
-            if name == npcName:
-                if fourTime > 6000:
-                    await npcFourMessages[name].delete()
-                    del npcFourMessages[name]
-                    return
         if 200 < fourTime < 400:
             if npcReady[npcName] is True:
                 readyMinutes = str(fourTime // 60)
@@ -57,8 +51,13 @@ async def checkNPC():
                 npcReady[npcName] = False
 
 
-async def clearMessages(channel, messages):
-    await channel.delete_messages(messages)
+async def checkNpcAlerts():
+    for name in npcFourMessages:
+        fourTime = await getNpcTimes(name)
+        if fourTime > 400:
+            await npcFourMessages[name].delete()
+            del npcFourMessages[name]
+            return
 
 
 async def getNpcTimes(name):
@@ -145,11 +144,11 @@ class Npc(commands.Cog):
         await startNpcEmbeds(npcChannel)
         self.timer.start()
 
-    # todo change to 100
-    @tasks.loop(seconds=20)
+    @tasks.loop(seconds=100)
     async def timer(self):
         await refreshNpcEmbeds()
         await checkNPC()
+        await checkNpcAlerts()
 
     @commands.command()
     async def npcs(self, ctx):
