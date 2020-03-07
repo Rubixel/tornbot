@@ -23,7 +23,6 @@ for npc in npcList:
     inverseNpcList[lCount] = npc
     npcTimes[npc] = 0
     npcReady[npc] = True
-    npcFourMessages[npc] = None
     lCount += 1
 
 
@@ -38,13 +37,12 @@ async def checkNPC():
     for inverseNpc in inverseNpcList:
         npcName = npcList[int(inverseNpc)]
         fourTime = npcTimes[npcName]
-        npcLevel = await getNpcLevel(npcName)
-        if npcLevel == "0" and npcReady[npcName] is False:
-            print(npcFourMessages[npcName])
-            await npcFourMessages[npcName].delete()
-            npcFourMessages[npcName] = None
-            npcReady[npcName] = True
-            return
+        for name in npcFourMessages:
+            if name == npcName:
+                if fourTime > 6000:
+                    await npcFourMessages[name].delete()
+                    del npcFourMessages[name]
+                    return
         if 200 < fourTime < 400:
             if npcReady[npcName] is True:
                 readyMinutes = str(fourTime // 60)
@@ -55,7 +53,7 @@ async def checkNPC():
                 embed = discord.Embed(title=npcSendName, color=0xae0000)
                 embed.set_thumbnail(url=constants["npcImageLinks"][inverseNpc])
                 embed.add_field(name="Ready to be attacked in: ", value=npcSendTime, inline=False)
-                npcFourMessages[npcName] = await npcChannel.send(npcSendLink + " <@&612556617153511435>", embed=embed)
+                npcFourMessages[npcName] = await npcChannel.send(npcSendLink + "<@&612556617153511435>", embed=embed)
                 npcReady[npcName] = False
 
 
@@ -142,7 +140,7 @@ class Npc(commands.Cog):
         print("NPC Cog Ready!")
         global npcChannel
         npcChannel = self.bot.get_channel(685164100191649849)
-        # npcChannel = self.bot.get_channel(594322325852389397)
+        #npcChannel = self.bot.get_channel(594322325852389397)
         await npcChannel.purge(limit=1000)
         await startNpcEmbeds(npcChannel)
         self.timer.start()
