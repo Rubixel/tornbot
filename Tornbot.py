@@ -18,7 +18,7 @@ with open('config.json') as f:
 # Code written/used by: Hcom [2003603]. Hcom3#7142
 
 # bot info
-bot = commands.Bot(command_prefix="bully")
+bot = commands.Bot(command_prefix="!")
 
 # replace with your own Torn API key in. apiKey = "TORN_API_KEY"
 apiKey = bot_keys.apiKey
@@ -118,6 +118,7 @@ async def on_ready():
         timer.start()
 
 
+# todo move torn(), help() and source() to a new cog
 @bot.command()
 async def torn(ctx, playerID):
     if checkCouncilRoles(ctx.author.roles) is False:
@@ -147,8 +148,12 @@ async def torn_error(ctx, error):
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
-        ctx.author.send("That is an invalid command!")
         return
+
+
+@bot.command()
+async def source(ctx):
+    await ctx.author.send("Github repository link:\nhttps://github.com/Rubixel/tornbot")
 
 
 @bot.command()
@@ -164,6 +169,7 @@ async def help(ctx):
     embed.add_field(name="torn [playerID]ᴿ", value="Prints a player's basic information & status.", inline=True)
     embed.add_field(name="help", value="Prints help screen.", inline=True)
     embed.add_field(name="npcs", value="Prints how much time is left before each NPC reaches level four.", inline=True)
+    embed.add_field(name="source", value="Sends the message author the github repository link.")
     embed.add_field(name="Restricted:", value="ᴿIs restricted to council/leaders/admins.\n", inline=True)
     await ctx.send(embed=embed)
 
