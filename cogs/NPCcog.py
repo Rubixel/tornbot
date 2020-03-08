@@ -37,8 +37,11 @@ async def checkNPC():
     for inverseNpc in inverseNpcList:
         npcName = npcList[int(inverseNpc)]
         fourTime = npcTimes[npcName]
+        print("CheckNPC")
+        print(fourTime)
         if 200 < fourTime < 400:
             if npcReady[npcName] is True:
+                print('npc is ready')
                 readyMinutes = str(fourTime // 60)
                 readySeconds = str(fourTime % 60)
                 npcSendName = npcName + " [" + npcIDs[npcIndex[npcName]] + "]"
@@ -48,12 +51,17 @@ async def checkNPC():
                 embed.set_thumbnail(url=constants["npcImageLinks"][inverseNpc])
                 embed.add_field(name="Ready to be attacked in: ", value=npcSendTime, inline=False)
                 npcFourMessages[npcName] = await npcChannel.send(npcSendLink + "<@&612556617153511435>", embed=embed)
+                print(npcFourMessages)
                 npcReady[npcName] = False
 
 
 async def checkNpcAlerts():
+    print("checkNpcAlerts")
+    print(npcFourMessages)
     for name in npcFourMessages:
+        print(name)
         fourTime = await getNpcTimes(name)
+        print(fourTime)
         if fourTime > 400:
             await npcFourMessages[name].delete()
             del npcFourMessages[name]
