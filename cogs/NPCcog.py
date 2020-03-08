@@ -63,6 +63,7 @@ async def checkNpcAlerts():
         fourTime = await getNpcTimes(name)
         print(fourTime)
         if fourTime > 400:
+            npcReady[name] = True
             await npcFourMessages[name].delete()
             del npcFourMessages[name]
             return
