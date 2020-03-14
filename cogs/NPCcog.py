@@ -3,7 +3,6 @@ from discord.ext import commands, tasks
 import json
 import aiohttp
 from Tornbot import fetch
-import requests
 
 with open('config.json') as f:
     constants = json.load(f)
@@ -18,6 +17,7 @@ inverseNpcList = {}
 npcFourMessages = {}
 npcIDs = ["4", "15"]
 lCount = 0
+reactMessage = ""
 for npc in npcList:
     npcIndex[npc] = lCount
     inverseNpcList[lCount] = npc
@@ -37,11 +37,8 @@ async def checkNPC():
     for inverseNpc in inverseNpcList:
         npcName = npcList[int(inverseNpc)]
         fourTime = npcTimes[npcName]
-        print("CheckNPC")
-        print(fourTime)
         if 200 < fourTime < 400:
             if npcReady[npcName] is True:
-                print('npc is ready')
                 readyMinutes = str(fourTime // 60)
                 readySeconds = str(fourTime % 60)
                 npcSendName = npcName + " [" + npcIDs[npcIndex[npcName]] + "]"
@@ -51,19 +48,15 @@ async def checkNPC():
                 embed.set_thumbnail(url=constants["npcImageLinks"][inverseNpc])
                 embed.add_field(name="Ready to be attacked in: ", value=npcSendTime, inline=False)
                 npcFourMessages[npcName] = await npcChannel.send(npcSendLink + "<@&612556617153511435>", embed=embed)
-                print(npcFourMessages)
                 npcReady[npcName] = False
 
 
 async def checkNpcAlerts():
-    print("checkNpcAlerts")
-    print(npcFourMessages)
     for name in npcFourMessages:
-        print(name)
         fourTime = await getNpcTimes(name)
-        print(fourTime)
         if fourTime > 400:
             npcReady[name] = True
+            # todo add an alive function for NPC that doesnt use YATA api, after othercog
             await npcFourMessages[name].delete()
             del npcFourMessages[name]
             return
@@ -88,6 +81,9 @@ async def getNpcLevel(name):
 
 
 async def startNpcEmbeds(channel):
+    global reactMessage
+    reactMessage = await channel.send("Click the emote attached to this message to add/remove the NPC role!")
+    await reactMessage.add_reaction(emoji="✅")
     for npcName in npcList:
         fourTime = await getNpcTimes(npcName)
         currentLevel = await getNpcLevel(npcName)
@@ -133,6 +129,11 @@ async def refreshNpcEmbeds():
         embed.add_field(name="Level IV is in:", value=sendTime, inline=True)
         await message.edit(embed=embed)
 
+async def hasNPC(roles):
+    for role in roles:
+        if role.name == "NPC":
+            return True
+    return False
 
 class Npc(commands.Cog):
 
@@ -144,11 +145,32 @@ class Npc(commands.Cog):
             return
 
     @commands.Cog.listener()
+    async def on_reaction_add(self, reaction, user):
+        userID = user.id
+        message = reaction.message
+        if userID == 578674131344556043:
+            return
+        if message.id == reactMessage.id:
+            await message.remove_reaction("✅", user)
+        else:
+            return
+        roles = user.roles
+        if await hasNPC(roles):
+            role = discord.utils.get(message.guild.roles, id=612556617153511435)
+            await user.remove_roles(role)
+            await user.send("NPC removed!")
+        else:
+            role = discord.utils.get(message.guild.roles, id=612556617153511435)
+            await user.add_roles(role)
+            await user.send("NPC added!")
+
+
+    @commands.Cog.listener()
     async def on_ready(self):
         print("NPC Cog Ready!")
         global npcChannel
         npcChannel = self.bot.get_channel(685164100191649849)
-        # npcChannel = self.bot.get_channel(594322325852389397)
+        #npcChannel = self.bot.get_channel(594322325852389397)
         await npcChannel.purge(limit=1000)
         await startNpcEmbeds(npcChannel)
         self.timer.start()
@@ -161,8 +183,9 @@ class Npc(commands.Cog):
 
     @commands.command()
     async def npcs(self, ctx):
-        r = requests.get("https://yata.alwaysdata.net/loot/timings/")
-        npcRequest = json.loads(r.text)
+        async with aiohttp.ClientSession() as session:
+            r = await fetch(session, "https://yata.alwaysdata.net/loot/timings/")
+        npcRequest = json.loads(r)
         for i in npcRequest:
             npcInfo = npcRequest[i]
             npcName = npcInfo["name"]

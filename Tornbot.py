@@ -30,7 +30,6 @@ if constants["botTestingMode"] is True:
     botID = bot_keys.testingBotID
 
 apiChecks = 0
-printTime = 0
 randBully = 0
 lastMinute = ""
 
@@ -86,17 +85,10 @@ def checkFactionNames(s):
 # runs every 10 seconds, keeps all of the npcTimers, and blood bag timers, and a few other things running
 @tasks.loop(seconds=20)
 async def timer():
-    constants["printTime"] += 20
-    constants["randBully"] += 20
-    if constants["printTime"] >= 1800:
-        # used for debugging
-        constants["printTime"] = 0
-        print("================================")
-        print("Bi-hourly time:")
-        print("Start time: " + str(time.time()))
-        print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
-    if constants["randBully"] >= 3600:
-        constants["randBully"] = 0
+    global randBully
+    randBully += 20
+    if randBully >= 3600:
+        randBully = 0
         random.seed()
         rand = random.randrange(0, len(constants["bullyList"]))
         await bot.change_presence(activity=discord.Game('Bullying ' + constants["bullyList"][rand] + "!"))
@@ -154,6 +146,7 @@ async def on_command_error(ctx, error):
 @bot.command()
 async def source(ctx):
     await ctx.author.send("Github repository link:\nhttps://github.com/Rubixel/tornbot")
+    await ctx.message.delete(delay=5)
 
 
 @bot.command()

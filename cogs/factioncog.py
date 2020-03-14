@@ -158,7 +158,7 @@ class Faction(commands.Cog):
         donatorList = []
         for tornID in members:
             donator = False
-            property = False
+            is_property = False
             await apichecklimit()
             async with aiohttp.ClientSession() as session:
                 r = await fetch(session, 'https://api.torn.com/user/' + tornID + '?selections=profile&key=%s' % apiKey)
@@ -170,9 +170,9 @@ class Faction(commands.Cog):
                 donator = True
                 donateString = " Donator - False"
             if data["property"] != "Private Island":
-                property = True
+                is_property = True
                 propString = (" Property - " + data["property"])
-            if donator is True or property is True:
+            if donator is True or is_property is True:
                 donatorList.append(playerName + ": " + donateString + propString)
         sendString = ""
         for string in donatorList:
