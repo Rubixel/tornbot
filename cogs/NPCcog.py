@@ -171,7 +171,7 @@ class Npc(commands.Cog):
         print("NPC Cog Ready!")
         global npcChannel
         npcChannel = self.bot.get_channel(685164100191649849)
-        # npcChannel = self.bot.get_channel(594322325852389397)
+        #npcChannel = self.bot.get_channel(594322325852389397)
         await npcChannel.purge(limit=1000)
         await startNpcEmbeds(npcChannel)
         self.timer.start()
