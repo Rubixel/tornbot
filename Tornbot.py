@@ -35,6 +35,9 @@ async def fetch(session, url):
     async with session.get(url) as response:
         return await response.text()
 
+async def jfetch(session, url):
+    async with session.get(url) as response:
+        return await response.json()
 
 # used for debugging
 def printd(*args):
@@ -87,33 +90,33 @@ def userIsAdmin(user):
 
 
 @bot.command()
-async def load(ctx, extention):
+async def load(ctx, extension):
     if userIsAdmin(ctx.author) is False:
         await ctx.atuhor.send("You need to be an administrator of the bot to use this command!")
-    if extention not in constants["cogNames"]:
-        await ctx.send("Cog " + extention + " not found!")
+    if extension not in constants["cogNames"]:
+        await ctx.send("Cog " + extension + " not found!")
         return
-    bot.load_extension(f'cogs.{extention}')
-    await ctx.send("Loaded " + extention)
+    bot.load_extension(f'cogs.{extension}')
+    await ctx.send("Loaded " + extension)
 
 
 @bot.command()
-async def unload(ctx, extention):
+async def unload(ctx, extension):
     if userIsAdmin(ctx.author) is False:
         await ctx.atuhor.send("You need to be an administrator of the bot to use this command!")
-    if extention not in constants["cogNames"]:
-        await ctx.send("Cog " + extention + " not found!")
+    if extension not in constants["cogNames"]:
+        await ctx.send("Cog " + extension + " not found!")
         return
-    bot.unload_extension(f'cogs.{extention}')
-    await ctx.send("Unloaded " + extention)
+    bot.unload_extension(f'cogs.{extension}')
+    await ctx.send("Unloaded " + extension)
 
 
 @bot.command()
 async def reloadcogs(ctx):
     if userIsAdmin(ctx.author) is False:
         await ctx.atuhor.send("You need to be an administrator of the bot to use this command!")
-    for extention in constants["cogNames"]:
-        bot.reload_extension(f'cogs.{extention}')
+    for extension in constants["cogNames"]:
+        bot.reload_extension(f'cogs.{extension}')
     await ctx.send("Cogs reloaded!")
 
 
