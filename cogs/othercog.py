@@ -2,14 +2,13 @@ import asyncio
 import json
 import random
 import time
-import re
 
 import aiohttp
 import discord
 from discord.ext import commands, tasks
 
 from Tornbot import fetch, constants, checkCouncilRoles, jfetch
-from bot_keys import apiKey, imKey, imSecret
+from bot_keys import apiKey
 
 randBully = 0
 apiChecks = 0
@@ -68,23 +67,6 @@ class Other(commands.Cog):
             print("Tornbot.py is ready.")
             print("================================")
             self.timer.start()
-
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.author.id == 198715108032118784 or message.author.id == 200676892024504320:
-            text = message.content
-            urls = re.findall('http[s]?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', text)
-            for img in message.attachments:
-                urls.append(img.url)
-            for url in urls:
-                if url.endswith(".png") or url.endswith(".jpeg") or url.endswith(".jpg"):
-                    async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(imKey, imSecret)) as session:
-                        response = await jfetch(session, 'https://api.imagga.com/v2/tags?image_url=%s' % url)
-                    tags = response["result"]["tags"]
-                    for tag in tags:
-                        if tag["tag"]["en"] in constants["rabbitList"]:
-                            await message.channel.send("Rabbit Stew!")
-                            return
 
     @commands.command()
     async def torn(self, ctx, playerID):
@@ -183,6 +165,25 @@ class Other(commands.Cog):
             await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
         print(ctx.message.channel.id)
         print(ctx.message.author.id)
+
+    @commands.command()
+    async def WWCD(self, ctx):
+        memberList = []
+        for factionID in constants["lottoFactions"]:
+            async with aiohttp.ClientSession() as session:
+                r = await fetch(session, 'https://api.torn.com/faction/'
+                                + str(factionID) + '?selections=basic&key=%s' % apiKey)
+                factionInfo = json.loads(r)
+                for playerID in factionInfo["members"]:
+                    memberList.append([factionInfo["members"][playerID]["name"], playerID])
+        rand = random.randrange(0, len(memberList))
+        pickedMember = memberList[rand]
+        await ctx.send("Winner winner chicken dinner! {} [{}] "
+                       "wins a prize from {}!".format(pickedMember[0], pickedMember[1], ctx.author.name))
+
+    @WWCD.error
+    async def inactive_error(self, ctx, error):
+        return
 
 
 def setup(bot):

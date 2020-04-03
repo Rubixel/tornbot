@@ -7,6 +7,7 @@ from Tornbot import fetch
 with open('config.json') as f:
     constants = json.load(f)
 
+onReadyRun = False
 npcList = ["Duke", "Leslie"]
 npcChannel = ""
 npcIndex = {}
@@ -168,6 +169,10 @@ class Npc(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        global onReadyRun
+        if onReadyRun is True:
+            return
+        onReadyRun = True
         print("NPC Cog Ready!")
         global npcChannel
         npcChannel = self.bot.get_channel(685164100191649849)

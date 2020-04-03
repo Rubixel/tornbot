@@ -16,7 +16,8 @@ with open('config.json') as f:
 
 # bot info
 bot = commands.Bot(command_prefix="!")
-
+for x in bot.guilds:
+    print(x.name)
 # replace with your own Torn API key in. apiKey = "TORN_API_KEY"
 apiKey = bot_keys.apiKey
 # replace with your own discord bot token in botID = "DISCORD_BOT_TOKEN"

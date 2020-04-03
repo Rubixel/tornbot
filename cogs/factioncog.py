@@ -186,6 +186,5 @@ class Faction(commands.Cog):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send('You must include a faction ID.\nExample: !donators 11747')
 
-
 def setup(bot):
     bot.add_cog(Faction(bot))
