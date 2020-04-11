@@ -1,38 +1,14 @@
-import asyncio
 import json
 import random
 import time
-
 import aiohttp
 import discord
 from discord.ext import commands, tasks
 
-from Tornbot import fetch, constants, checkCouncilRoles, jfetch
+from functions import fetch, constants, getIDfromDiscord
 from bot_keys import apiKey
 
 randBully = 0
-apiChecks = 0
-lastMinute = ""
-
-
-async def apichecklimit():
-    global lastMinute
-    global apiChecks
-    # takes current time
-    currentMinute = time.time()
-    # sees if API has been called at all
-    if lastMinute == "":
-        lastMinute = time.time()
-        return
-    # checks if it has been longer than a minute since last API call,
-    if lastMinute + 61 < currentMinute:
-        apiChecks = 0
-        lastMinute = currentMinute
-    apiChecks = apiChecks + 1
-    # if too many calls make program sleep to refresh the limit
-    if apiChecks >= constants["apiLimit"]:
-        print("Sleeping 60s")
-        await asyncio.sleep(60)
 
 
 class Other(commands.Cog):
@@ -69,37 +45,80 @@ class Other(commands.Cog):
             self.timer.start()
 
     @commands.command()
-    async def torn(self, ctx, playerID):
-        if checkCouncilRoles(ctx.author.roles) is False:
-            await ctx.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
-            return
-        if playerID.isdigit() is False:
-            await ctx.send(playerID + " is not a valid playerID!")
-            return
-        async with aiohttp.ClientSession() as session:
-            r = await fetch(session, 'https://api.torn.com/user/' + playerID + '?selections=basic&key=%s' % apiKey)
-        info = json.loads(r)
-        if '{"error": {"code": 6, "error": "Incorrect ID"}}' == info:
-            await ctx.send("Error: Incorrect ID")
-            return
-        await ctx.send(
-            info['name'] + " is a level " + str(info['level']) + " " + info['gender'] + ". Currently, they are " +
-            info['status']['description'] + '.')
+    async def profile(self, ctx, arg1):
+        # detects if the command format is used: xprofile @Hcom [2003693]
+        if ctx.message.mentions:
+            mention = ctx.message.mentions[0]
+            memberID = await getIDfromDiscord(mention.id)
+        else:
+            if arg1.isdigit():
+                memberID = arg1
+            else:
+                # if they put a number or non digit symbol in their command, returns and error
+                await ctx.send("Error! TornID must be only digits!")
+                return
+        if memberID:
+            # gets player info
+            async with aiohttp.ClientSession() as session:
+                r = await fetch(session,
+                                "https://api.torn.com/user/" + memberID + "?selections=profile,personalstats&key="
+                                                                          "" + apiKey)
+            userInfo = json.loads(r)
+            # detects if there was an error/ if the ID provided isn't a real one
+            if "error" in userInfo:
+                await ctx.send(f"Error: Code: {userInfo['error']['code']}, {userInfo['error']['error']}")
+                return
+            # gets all of the information from the API request
+            personalStats = userInfo['personalstats']
+            lifeInfo = userInfo["life"]
+            facInfo = userInfo["faction"]
+            jobInfo = userInfo["job"]
+            # changes the output depending on the result of the API
+            if facInfo["faction_id"] == 0:
+                factionStatus = "Not in a faction"
+            else:
+                factionStatus = f"{facInfo['position']} of [{facInfo['faction_name']}](https://www.torn.com/factions" \
+                                f".php?step=profile&ID={facInfo['faction_id']}) for {facInfo['days_in_faction']} days"
+            if jobInfo["company_id"] == 0:
+                if jobInfo["position"] == "None":
+                    jobStatus = "Not in a job"
+                else:
+                    jobStatus = jobInfo['position']
+            else:
+                jobStatus = f"{jobInfo['position']} of [{jobInfo['company_name']}](https://www.torn.com/joblist.php#/" \
+                            f"p=corpinfo&ID={jobInfo['company_id']})"
+            if userInfo["married"]["duration"] == 0:
+                marriageStatus = "Single"
+            else:
+                marriageStatus = f"Married to: [{userInfo['married']['spouse_name']}]" \
+                                 f"(https://www.torn.com/profiles.php?XID={userInfo['married']['spouse_id']}) " \
+                                 f"for {userInfo['married']['duration']} days"
+            embed = discord.Embed(color=0x0eaf0a, title=f"{userInfo['name']} [{memberID}]",
+                                  url=f"https://www.torn.com/profiles.php?XID={memberID}")
+            embed.add_field(name="**Basic Details**:",
+                            value=f"Level: {userInfo['level']}\nRank: {userInfo['rank']}\nAge: {userInfo['age']}\n"
+                                  f"Gender: {userInfo['gender']}\nProperty: {userInfo['property']}\n"
+                                  f"Awards: {userInfo['awards']}\nNetworth:{personalStats['networth']:,}\n"
+                                  f"Xanax Taken: {personalStats['xantaken']}", inline=False)
+            embed.add_field(name="**Status**:", value=f"Life: {lifeInfo['current']}/{lifeInfo['maximum']}\n"
+                                                      f"Status: {userInfo['status']['description']}\nLast "
+                                                      f"Online: {userInfo['last_action']['relative']}", inline=False)
+            embed.add_field(name="**Faction/Job**:", value=factionStatus + "\n" + jobStatus, inline=False)
+            embed.add_field(name="**Marriage Status**:", value=marriageStatus, inline=False)
+            await ctx.author.send(embed=embed)
+            await ctx.message.add_reaction(emoji="👍")
+            await ctx.message.delete(delay=15)
 
-    @torn.error
-    async def torn_error(self, ctx, error):
+    @profile.error
+    async def profile_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send('You must include a player ID.\nExample: !torn 2003693')
+            await ctx.send('You must include a player ID, or ping a player.\nExample: '
+                           '!profile 2003693 or !profile @hcom')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
             return
-
-    @commands.command()
-    async def source(self, ctx):
-        await ctx.author.send("Github repository link:\nhttps://github.com/Rubixel/tornbot")
-        await ctx.message.delete(delay=5)
 
     @commands.command()
     async def help(self, ctx):
@@ -109,81 +128,10 @@ class Other(commands.Cog):
                         inline=True)
         embed.add_field(name="inactives [factionID]ᴿ", value="Prints players inactive for over 10 hours.",
                         inline=True)
-        embed.add_field(name="donators [factionID]ᴿ", value="Prints players without donator status, and or a PI.",
-                        inline=True)
-        embed.add_field(name="torn [playerID]ᴿ", value="Prints a player's basic information & status.", inline=True)
+        embed.add_field(name="profile [playerID]ᴿ", value="Prints a player's basic information & status.", inline=True)
         embed.add_field(name="help", value="Prints help screen.", inline=True)
-        embed.add_field(name="npcs", value="Prints how much time is left before each NPC reaches level four.",
-                        inline=True)
-        embed.add_field(name="source", value="Sends the message author the github repository link.")
         embed.add_field(name="Restricted:", value="ᴿIs restricted to council/leaders/admins.\n", inline=True)
         await ctx.send(embed=embed)
-
-    @commands.command()
-    async def verify(self, ctx, tornid):
-        if constants["blockVerify"] is True:
-            return
-        if tornid.isdigit() is False:
-            await ctx.send(tornid + " is not a valid playerID!")
-            return
-        verifyID = tornid
-        async with aiohttp.ClientSession() as session:
-            tornname = await json.loads(fetch(session, 'https://api.torn.com/user/' + verifyID +
-                                              '?selections=basic&key=%s' % apiKey))["name"]
-        async with aiohttp.ClientSession() as session:
-            data = await json.loads(fetch(session, 'https://api.torn.com/user/' + verifyID +
-                                          '?selections=discord&key=%s' % apiKey
-                                          ))
-        if '{"error": {"code": 6, "error": "Incorrect ID"}}' == json.dumps(data):
-            await ctx.send("Error: Incorrect ID")
-            return
-        discordID = data["discord"]["discordID"]
-        if discordID == "":
-            await ctx.send(
-                tornname + " [" + verifyID + "] is not associated with a discord account. Please verify in Torn's "
-                                             "Discord server: https://discordapp.com/invite/TVstvww"
-                + "<@" + str(ctx.author.id) + ">")
-        elif discordID != str(ctx.author.id):
-            await ctx.channel.send(
-                tornname + " [" + verifyID + "] is associated with another discord account. Please verify with your "
-                                             "Discord account in Torn's Discord server: https://discordapp.com/invite/"
-                                             "TVstvww " + "<@" +
-                str(ctx.author.id) + ">")
-        elif discordID == str(ctx.author.id):
-            await ctx.send("Welcome " + tornname + " [" + verifyID + "]!")
-            await ctx.author.edit(nick=tornname + " [" + verifyID + "]")
-
-    @verify.error
-    async def verify_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("You must include a player ID\nExample: !verify 2003693")
-
-    @commands.command()
-    async def getchannelinfo(self, ctx):
-        # used for assigning channels that the bot posts in
-        if checkCouncilRoles(ctx.author.roles) is False:
-            await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
-        print(ctx.message.channel.id)
-        print(ctx.message.author.id)
-
-    @commands.command()
-    async def WWCD(self, ctx):
-        memberList = []
-        for factionID in constants["lottoFactions"]:
-            async with aiohttp.ClientSession() as session:
-                r = await fetch(session, 'https://api.torn.com/faction/'
-                                + str(factionID) + '?selections=basic&key=%s' % apiKey)
-                factionInfo = json.loads(r)
-                for playerID in factionInfo["members"]:
-                    memberList.append([factionInfo["members"][playerID]["name"], playerID])
-        rand = random.randrange(0, len(memberList))
-        pickedMember = memberList[rand]
-        await ctx.send("Winner winner chicken dinner! {} [{}] "
-                       "wins a prize from {}!".format(pickedMember[0], pickedMember[1], ctx.author.name))
-
-    @WWCD.error
-    async def inactive_error(self, ctx, error):
-        return
 
 
 def setup(bot):

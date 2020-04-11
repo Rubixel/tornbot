@@ -5,13 +5,11 @@
   "adminUsers": [200676892024504320, 547926928313548801, 547986194055692289],
   "npcChannel": "",
   "debug": false,
-  "blockVerify": true,
   "onReadyRun": false,
-  "rabbitList": ["bunny", "rabbit", "hare"],
   "romanNumbers": {"0": "0", "1": "I", "2": "II", "3": "III", "4": "IV", "5": "V"},
   "cogNames": ["NPCcog","factioncog", "othercog"],
-  "npcImageLinks": ["https://i.imgur.com/sCVrkbF.png", "https://i.imgur.com/JBTo4vA.png"],
+  "npcImageLinks": {"Duke": "https://profileimages.torn.com/4d661456-1798-ad32-4.png", "Leslie": "https://profileimages.torn.com/4d661456-17bc-2098-15.png"},
   "factionNames": {"NSI":9533,"NSII":11747,"NSIII":12094,"JFK":3241,"CR":16628,"R*":8336,"IBB":2736,"SA":2013,"DA":231,"39thx": 16312,"39th": 19,"MnC": 7835,"FTW": 11581},
-  "bullyList": ["Hcom", "jukka", "Gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow", "STEVE_HOLT", "Rhino", "LTJELLOMAN","Bones", "Roxy", "Everyone", "ttyper", "Vicarious", "Stretch", "Karen", "Itself"],
+  "bullyList": ["Hcom", "jukka", "gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow", "STEVE_HOLT", "BOOMER_HOLT", "Rhino", "Rhinko", "LTJELLOMAN", "Bones", "Roxy", "Everyone", "ttyper", "Vicarious", "Stretch", "Karen", "Itself"],
   "lottoFactions": [9533, 11747, 12094]
 }
