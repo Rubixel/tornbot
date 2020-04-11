@@ -43,7 +43,7 @@ async def checkNpcAlerts():
     npcInfo = json.loads(r)
     for npcID in npcInfo:
         npcName = npcInfo[npcID]['name']
-        if npcInfo[npcID]['timings']['4']['due'] > 200 and npcFourMessages[npcName]:
+        if npcInfo[npcID]['timings']['4']['due'] > 400 and npcFourMessages[npcName]:
             await npcFourMessages[npcName].delete()
             npcFourMessages[npcName] = None
             return
