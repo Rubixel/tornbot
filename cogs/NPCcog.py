@@ -45,8 +45,8 @@ async def checkNpcAlerts():
         npcName = npcInfo[npcID]['name']
         if npcInfo[npcID]['timings']['4']['due'] > 400 and npcFourMessages[npcName]:
             await npcFourMessages[npcName].delete()
+            npcReady[npcName] = True
             npcFourMessages[npcName] = None
-            return
 
 
 async def startNpcEmbeds(channel):
@@ -134,10 +134,13 @@ class Npc(commands.Cog):
         await startNpcEmbeds(npcChannel)
         self.timer.start()
 
-    @tasks.loop(seconds=100)
+    @tasks.loop(seconds=10)
     async def timer(self):
+        print("Refreshing")
         await refreshNpcEmbeds()
+        print("checking")
         await checkNPC()
+        print("checking alerts")
         await checkNpcAlerts()
 
 

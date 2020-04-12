@@ -98,7 +98,7 @@ class Other(commands.Cog):
             embed.add_field(name="**Basic Details**:",
                             value=f"Level: {userInfo['level']}\nRank: {userInfo['rank']}\nAge: {userInfo['age']}\n"
                                   f"Gender: {userInfo['gender']}\nProperty: {userInfo['property']}\n"
-                                  f"Awards: {userInfo['awards']}\nNetworth:{personalStats['networth']:,}\n"
+                                  f"Awards: {userInfo['awards']}\nNetworth: ${personalStats['networth']:,}\n"
                                   f"Xanax Taken: {personalStats['xantaken']}", inline=False)
             embed.add_field(name="**Status**:", value=f"Life: {lifeInfo['current']}/{lifeInfo['maximum']}\n"
                                                       f"Status: {userInfo['status']['description']}\nLast "
