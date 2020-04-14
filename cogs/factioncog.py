@@ -7,7 +7,7 @@ import aiohttp
 
 with open('config.json') as f:
     constants = json.load(f)
-
+onReadyRun = True
 
 class Faction(commands.Cog):
 
@@ -20,6 +20,10 @@ class Faction(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        global onReadyRun
+        if not onReadyRun:
+            return
+        onReadyRun = False
         print("Faction Cog ready!")
 
     @commands.command()

@@ -134,7 +134,7 @@ class Npc(commands.Cog):
         await startNpcEmbeds(npcChannel)
         self.timer.start()
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(seconds=100)
     async def timer(self):
         print("Refreshing")
         await refreshNpcEmbeds()
