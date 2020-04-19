@@ -49,6 +49,7 @@ class Faction(commands.Cog):
             return
         members = parsedJSON["members"]
         onlinerList = []
+        onlinerCount = 0
         await ctx.send('Please wait, generating list.')
         for tornID in members:
             playerInfo = members[tornID]
@@ -56,11 +57,12 @@ class Faction(commands.Cog):
             playerName = playerInfo['name']
             splitStrings = lastAction.split()
             if splitStrings[1] == "minutes" and int(splitStrings[0]) < 6:
+                onlinerCount += 1
                 onlinerList.append(playerName + " [" + tornID + '] ' + lastAction)
         sendString = "Players online in the past 5 minutes: \n ```"
         for state in onlinerList:
             sendString = (sendString + " " + state + " " + "\n")
-        await ctx.send(sendString + '```')
+        await ctx.send(sendString + f'\nIn total, {onlinerCount} players are online.```')
 
     @onliners.error
     async def onliners_error(self, ctx, error):
@@ -91,19 +93,22 @@ class Faction(commands.Cog):
         inactivePlayers = []
         members = parsedJSON["members"]
         await ctx.send('Please wait, generating list.')
+        inactiveCount = 0
         for tornID in members:
             playerInfo = members[tornID]
             lastAction = playerInfo["last_action"]["relative"]
             playerName = playerInfo['name']
             splitStrings = (lastAction.split())
             if splitStrings[1] == "hours" and int(splitStrings[0]) > 10:
+                inactiveCount += 1
                 inactivePlayers.append(playerName + " [" + tornID + '] ' + lastAction)
             elif splitStrings[1] == "day" or splitStrings[1] == "days":
+                inactiveCount += 1
                 inactivePlayers.append(playerName + " [" + tornID + '] ' + lastAction)
         sendString = "Players Inactive for 10 hours or more: \n ```"
         for state in inactivePlayers:
             sendString = (sendString + " " + state + " " + "\n")
-        await ctx.send(sendString + "```")
+        await ctx.send(sendString + f"In total, {inactiveCount} players are inactive.```")
 
     @inactives.error
     async def inactive_error(self, ctx, error):
