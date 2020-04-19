@@ -121,7 +121,7 @@ class Other(commands.Cog):
             return
 
     @commands.command()
-    async def help(self, ctx):
+    async def bbhelp(self, ctx):
         embed = discord.Embed(title="Help screen:", description="All available commands:")
         embed.set_thumbnail(url="https://i.imgur.com/JIsJGhb.png")
         embed.add_field(name="onliners [factionID]ᴿ", value="Prints players active in the last five minutes.",
