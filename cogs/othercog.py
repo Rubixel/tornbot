@@ -1,14 +1,16 @@
 import json
 import random
+import re
 import time
 import aiohttp
 import discord
 from discord.ext import commands, tasks
 
-from functions import fetch, constants, getIDfromDiscord
-from bot_keys import apiKey
+from functions import fetch, constants, getIDfromDiscord, jfetch
+from bot_keys import apiKey, imKey, imSecret
 
 randBully = 0
+tessaChannel = ""
 
 
 class Other(commands.Cog):
@@ -32,11 +34,16 @@ class Other(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        global tessaChannel
         if constants["onReadyRun"] is False:
             constants["onReadyRun"] = True
             random.seed()
             rand = random.randrange(0, len(constants["bullyList"]))
             await self.bot.change_presence(activity=discord.Game('Bullying ' + constants["bullyList"][rand] + "!"))
+            if constants["botTestingMode"]:
+                tessaChannel = self.bot.get_channel(id=594322325852389397)
+            else:
+                tessaChannel = self.bot.get_channel(id=559776463126134818)
             print("================================")
             print("Start time: " + str(time.time()))
             print("Start time: " + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
@@ -132,6 +139,37 @@ class Other(commands.Cog):
         embed.add_field(name="help", value="Prints help screen.", inline=True)
         embed.add_field(name="Restricted:", value="ᴿIs restricted to council/leaders/admins.\n", inline=True)
         await ctx.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.channel != tessaChannel:
+            return
+        if message.author.id == 525443694644559894 or message.author.id == 200676892024504320:
+            text = message.content
+            urls = re.findall('http[s]?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', text)
+            for img in message.attachments:
+                urls.append(img.url)
+            for url in urls:
+                if url.endswith(".png") or url.endswith(".jpeg") or url.endswith(".jpg"):
+                    async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(imKey, imSecret)) as session:
+                        response = await jfetch(session, 'https://api.imagga.com/v2/tags?image_url=%s' % url)
+                    tags = response["result"]["tags"]
+                    for x in tags:
+                        print(x)
+                        if x["tag"]["en"] in constants["dogs"]:
+                            print("its a dog!")
+                            for tag in tags:
+                                print(tag)
+                                if tag["tag"]["en"] in constants["tessa"]:
+                                    if tag["confidence"] > 40:
+                                        print("tessa")
+                                        await message.add_reaction(emoji="🥇")
+                                        return
+                                elif tag["tag"]["en"] in constants["bestBoy"]:
+                                    if tag["confidence"] > 40:
+                                        print("easton")
+                                        return
+                            return
 
 
 def setup(bot):
