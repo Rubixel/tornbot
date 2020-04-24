@@ -143,6 +143,7 @@ class Other(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.channel != tessaChannel:
+            print("Not the right channel")
             return
         if message.author.id == 525443694644559894 or message.author.id == 200676892024504320:
             text = message.content
