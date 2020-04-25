@@ -143,7 +143,6 @@ class Other(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.channel != tessaChannel:
-            print("Not the right channel")
             return
         if message.author.id == 525443694644559894 or message.author.id == 200676892024504320:
             text = message.content
@@ -156,19 +155,14 @@ class Other(commands.Cog):
                         response = await jfetch(session, 'https://api.imagga.com/v2/tags?image_url=%s' % url)
                     tags = response["result"]["tags"]
                     for x in tags:
-                        print(x)
                         if x["tag"]["en"] in constants["dogs"]:
-                            print("its a dog!")
                             for tag in tags:
-                                print(tag)
                                 if tag["tag"]["en"] in constants["tessa"]:
                                     if tag["confidence"] > 40:
-                                        print("tessa")
                                         await message.add_reaction(emoji="🥇")
                                         return
                                 elif tag["tag"]["en"] in constants["bestBoy"]:
                                     if tag["confidence"] > 40:
-                                        print("easton")
                                         return
                             return
 
