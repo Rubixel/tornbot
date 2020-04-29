@@ -185,6 +185,8 @@ class Faction(commands.Cog):
 
     @commands.command()
     async def checkxanax(self, ctx, min, days):
+        if not ctx.author.id in constants["adminUsers"]:
+            await ctx.send("Only a bot administrator can use this command!")
         with open("xanax_check_info.json", "r") as f:
             previousCheck = json.load(f)
         checkDifferences = {}
