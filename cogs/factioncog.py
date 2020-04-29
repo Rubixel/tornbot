@@ -187,13 +187,15 @@ class Faction(commands.Cog):
     async def checkxanax(self, ctx, min, days):
         if not ctx.author.id in constants["adminUsers"]:
             await ctx.send("Only a bot administrator can use this command!")
+        await ctx.send(f"Checking members who have a lower than {min} xanax/day ratio, across {days} days. "
+                       f"\nPlease wait, this will take around a minute.")
         with open("xanax_check_info.json", "r") as f:
             previousCheck = json.load(f)
-        checkDifferences = {}
         async with aiohttp.ClientSession() as session:
             r = await fetch(session, f'https://api.torn.com/faction/?selections=basic&key={apiKey}')
         factionInfo = json.loads(r)
         members = factionInfo["members"]
+        belowMin = []
         for id in members:
             memberName = members[id]["name"]
             if memberName not in previousCheck:
@@ -202,21 +204,16 @@ class Faction(commands.Cog):
                 r = await fetch(session, f'https://api.torn.com/user/{id}?selections=personalstats&key={apiKey}')
             userInfo = json.loads(r)
             xanaxTaken = userInfo["personalstats"]["xantaken"]
-            overdoses = userInfo["personalstats"]["overdosed"]
-            checkDifferences[memberName] = {"xantaken": xanaxTaken - previousCheck[memberName]["xantaken"],
-                                            "overdoses": overdoses - previousCheck[memberName]["overdoses"]}
+            if xanaxTaken - previousCheck[memberName]["xantaken"] / int(days) < int(min):
+                overdoses = userInfo["personalstats"]["overdosed"] - previousCheck[memberName]["overdoses"]
+                xanaxDifference = xanaxTaken - previousCheck[memberName]['xantaken']
+                belowMin.append([memberName, (xanaxDifference + overdoses * 3) / int(days), overdoses])
             await asyncio.sleep(1)
-        belowMin = []
-        for player in checkDifferences:
-            xanaxDifference = checkDifferences[player]["xantaken"]
-            ods = checkDifferences[player]["overdoses"]
-            if xanaxDifference / int(days) < int(min):
-                belowMin.append([player, (xanaxDifference + ods * 3) / int(days)])
         belowMin.sort(key=lambda x: x[1])
-        endStrings = []
+        embed = discord.Embed()
         for n in belowMin:
-            endStrings.append(f"{n[0]} - {n[1]}")
-        await ctx.send("```" + "\n".join(endStrings) + "```")
+            embed.add_field(name=n[0], value=f"Xanax: {n[1]}\nODs: {n[2]}", inline=True)
+        await ctx.send(embed=embed)
 
     @checkxanax.error
     async def checkxanax_error(self, ctx, error):
