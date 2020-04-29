@@ -1,4 +1,7 @@
+import asyncio
 import random
+
+import discord
 from discord.ext import commands
 import json
 from functions import checkFactionNames, checkCouncilRoles, fetch
@@ -152,6 +155,78 @@ class Faction(commands.Cog):
     @WWCD.error
     async def wwcd_error(self, ctx, error):
         return
+
+    @commands.command()
+    async def starttracking(self, ctx):
+        if not ctx.author.id in constants["adminUsers"]:
+            await ctx.send("Only a bot administrator can use this command!")
+        await ctx.send("Please wait, this will take around a minute.")
+        async with aiohttp.ClientSession() as session:
+            r = await fetch(session, f'https://api.torn.com/faction/?selections=basic&key={apiKey}')
+        factionInfo = json.loads(r)
+        members = factionInfo["members"]
+        memberDict = {}
+        for id in members:
+            memberName = members[id]["name"]
+            async with aiohttp.ClientSession() as session:
+                r = await fetch(session, f'https://api.torn.com/user/{id}?selections=personalstats&key={apiKey}')
+            userInfo = json.loads(r)
+            if "error" in userInfo:
+                await asyncio.sleep(50)
+            xanaxTaken = userInfo["personalstats"]["xantaken"]
+            overdoses = userInfo["personalstats"]["overdosed"]
+            memberDict[memberName] = {"xantaken": xanaxTaken, "overdoses": overdoses}
+            await asyncio.sleep(1)
+        jsonInfo = json.dumps(memberDict, indent=2)
+        with open("xanax_check_info.json", "w") as outf:
+            outf.write(jsonInfo)
+        with open("xanax_check_info.json", "rb") as outf:
+            await ctx.send(file=discord.File(outf, 'xanax.txt'))
+
+    @commands.command()
+    async def checkxanax(self, ctx, min, days):
+        with open("xanax_check_info.json", "r") as f:
+            previousCheck = json.load(f)
+        checkDifferences = {}
+        async with aiohttp.ClientSession() as session:
+            r = await fetch(session, f'https://api.torn.com/faction/?selections=basic&key={apiKey}')
+        factionInfo = json.loads(r)
+        members = factionInfo["members"]
+        for id in members:
+            memberName = members[id]["name"]
+            if memberName not in previousCheck:
+                continue
+            async with aiohttp.ClientSession() as session:
+                r = await fetch(session, f'https://api.torn.com/user/{id}?selections=personalstats&key={apiKey}')
+            userInfo = json.loads(r)
+            xanaxTaken = userInfo["personalstats"]["xantaken"]
+            overdoses = userInfo["personalstats"]["overdosed"]
+            checkDifferences[memberName] = {"xantaken": xanaxTaken - previousCheck[memberName]["xantaken"],
+                                            "overdoses": overdoses - previousCheck[memberName]["overdoses"]}
+            await asyncio.sleep(1)
+        belowMin = []
+        for player in checkDifferences:
+            xanaxDifference = checkDifferences[player]["xantaken"]
+            ods = checkDifferences[player]["overdoses"]
+            if xanaxDifference / int(days) < int(min):
+                belowMin.append([player, (xanaxDifference + ods * 3) / int(days)])
+        belowMin.sort(key=lambda x: x[1])
+        endStrings = []
+        for n in belowMin:
+            endStrings.append(f"{n[0]} - {n[1]}")
+        await ctx.send("```" + "\n".join(endStrings) + "```")
+
+    @checkxanax.error
+    async def checkxanax_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send('You must include a minimum xanax intake, and the number of days since last check. '
+                           '\nEx: !checkxanax 2 5')
+
+
+
+
+
+
 
 
 def setup(bot):
