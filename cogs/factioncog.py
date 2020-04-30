@@ -1,9 +1,12 @@
 import asyncio
+import os
 import random
+import time
 
 import discord
 from discord.ext import commands
 import json
+
 from functions import checkFactionNames, checkCouncilRoles, fetch
 from bot_keys import apiKey
 import aiohttp
@@ -11,6 +14,7 @@ import aiohttp
 with open('config.json') as f:
     constants = json.load(f)
 onReadyRun = True
+
 
 class Faction(commands.Cog):
 
@@ -157,8 +161,10 @@ class Faction(commands.Cog):
         return
 
     @commands.command()
-    async def starttracking(self, ctx):
-        if not ctx.author.id in constants["adminUsers"]:
+    async def trackxanax(self, ctx, name=None):
+        if not name:
+            name = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+        if ctx.author.id not in constants["adminUsers"]:
             await ctx.send("Only a bot administrator can use this command!")
         await ctx.send("Please wait, this will take around a minute.")
         async with aiohttp.ClientSession() as session:
@@ -166,10 +172,10 @@ class Faction(commands.Cog):
         factionInfo = json.loads(r)
         members = factionInfo["members"]
         memberDict = {}
-        for id in members:
-            memberName = members[id]["name"]
+        for memberID in members:
+            memberName = members[memberID]["name"]
             async with aiohttp.ClientSession() as session:
-                r = await fetch(session, f'https://api.torn.com/user/{id}?selections=personalstats&key={apiKey}')
+                r = await fetch(session, f'https://api.torn.com/user/{memberID}?selections=personalstats&key={apiKey}')
             userInfo = json.loads(r)
             if "error" in userInfo:
                 await asyncio.sleep(50)
@@ -177,34 +183,75 @@ class Faction(commands.Cog):
             overdoses = userInfo["personalstats"]["overdosed"]
             memberDict[memberName] = {"xantaken": xanaxTaken, "overdoses": overdoses}
             await asyncio.sleep(1)
-        jsonInfo = json.dumps(memberDict, indent=2)
-        with open("xanax_check_info.json", "w") as outf:
-            outf.write(jsonInfo)
-        with open("xanax_check_info.json", "rb") as outf:
-            await ctx.send(file=discord.File(outf, 'xanax.txt'))
+        fullTime = time.strftime('%Y-%m-%d_%H:%M:%S', time.localtime(time.time()))
+        jsonInfo = json.dumps({"time": time.time(), "date": fullTime, "members": memberDict}, indent=2)
+        outf = open(f"./xanax/{name}-xanaxinfo.json", "w")
+        outf.write(jsonInfo)
+        outf.close()
+        with open(f"./xanax/{name}-xanaxinfo.json", "rb") as outf:
+            await ctx.send(file=discord.File(outf, f'{name}-xanaxinfo.json'))
 
     @commands.command()
-    async def checkxanax(self, ctx, min, days):
-        if not ctx.author.id in constants["adminUsers"]:
+    async def checkxanax(self, ctx, minimum):
+        if ctx.author.id not in constants["adminUsers"]:
             await ctx.send("Only a bot administrator can use this command!")
-        await ctx.send(f"Checking members who have a lower than {min} xanax/day ratio, across {days} days. "
+        xanaxFiles = []
+        for name in os.listdir("./xanax"):
+            if name.endswith("xanaxinfo.json"):
+                xanaxFiles.append(name)
+        if not xanaxFiles:
+            await ctx.send("There are no files to compare!")
+            return
+        sendFiles = []
+        fileIndex = {}
+        i = 1
+        for file in xanaxFiles:
+            sendFiles.append(f"{i} -> {file}")
+            fileIndex[str(i)] = file
+            i += 1
+        fn = "\n".join(sendFiles)
+        await ctx.send("Here are the availible files to check: \n" + fn)
+        await ctx.send("Choose the file you want to check by responding with the number to the left of the filename.")
+
+        def check(m):
+            if m.author == ctx.author and m.channel == ctx.channel:
+                return True
+            else:
+                return False
+
+        try:
+            msg = await self.bot.wait_for('message', check=check, timeout=30)
+        except asyncio.TimeoutError:
+            return
+        else:
+            file = fileIndex[msg.content]
+            if msg.content.isdigit is False:
+                await ctx.send("That is an invalid number.")
+                return
+        with open(f"./xanax/{file}", "r") as ofile:
+            previousJson = json.load(ofile)
+        previousTime = previousJson["time"]
+        days = round(abs(previousTime - time.time()) / 86400)
+        if days <= 0:
+            await ctx.send("You cannot check a report that was generated less than 24 hours ago. ")
+            return
+        await ctx.send(f"Checking members who have a lower than {minimum} xanax/day ratio, across {days} days. "
                        f"\nPlease wait, this will take around a minute.")
-        with open("xanax_check_info.json", "r") as f:
-            previousCheck = json.load(f)
+        previousCheck = previousJson["members"]
         async with aiohttp.ClientSession() as session:
             r = await fetch(session, f'https://api.torn.com/faction/?selections=basic&key={apiKey}')
         factionInfo = json.loads(r)
         members = factionInfo["members"]
         belowMin = []
-        for id in members:
-            memberName = members[id]["name"]
+        for memberID in members:
+            memberName = members[memberID]["name"]
             if memberName not in previousCheck:
                 continue
             async with aiohttp.ClientSession() as session:
-                r = await fetch(session, f'https://api.torn.com/user/{id}?selections=personalstats&key={apiKey}')
+                r = await fetch(session, f'https://api.torn.com/user/{memberID}?selections=personalstats&key={apiKey}')
             userInfo = json.loads(r)
             xanaxTaken = userInfo["personalstats"]["xantaken"]
-            if xanaxTaken - previousCheck[memberName]["xantaken"] / int(days) < int(min):
+            if xanaxTaken - previousCheck[memberName]["xantaken"] / int(days) < int(minimum):
                 overdoses = userInfo["personalstats"]["overdosed"] - previousCheck[memberName]["overdoses"]
                 xanaxDifference = xanaxTaken - previousCheck[memberName]['xantaken']
                 belowMin.append([memberName, (xanaxDifference + overdoses * 3) / int(days), overdoses])
@@ -218,14 +265,138 @@ class Faction(commands.Cog):
     @checkxanax.error
     async def checkxanax_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send('You must include a minimum xanax intake, and the number of days since last check. '
-                           '\nEx: !checkxanax 2 5')
+            await ctx.send('You must include a minimum xanax intake!\nEx: !checkxanax 2')
 
+    @commands.command()
+    async def comparexanax(self, ctx):
+        xanaxFiles = []
+        for name in os.listdir("./xanax"):
+            if name.endswith("xanaxinfo.json"):
+                xanaxFiles.append(name)
+        if not xanaxFiles:
+            await ctx.send("There are no files to compare!")
+            return
+        sendFiles = []
+        fileIndex = {}
+        i = 1
+        for file in xanaxFiles:
+            sendFiles.append(f"{i} -> {file}")
+            fileIndex[str(i)] = file
+            i += 1
+        fn = "\n".join(sendFiles)
+        await ctx.send("Here are the availible files to compare: \n" + fn)
+        await ctx.send("Choose two files to compare by using the number to the left of the filename. Seperate the two"
+                       "selections by a command and a space.")
 
+        def check(m):
+            if m.author == ctx.author and m.channel == ctx.channel:
+                return True
+            else:
+                return False
 
+        try:
+            msg = await self.bot.wait_for('message', check=check, timeout=30)
+        except asyncio.TimeoutError:
+            return
+        else:
+            files = []
+            choices = msg.content.split(", ")
+            if len(choices) != 2:
+                await ctx.send("There must be only two arguments")
+            files.append(fileIndex[choices[0]])
+            files.append(fileIndex[choices[1]])
+            with open(f"./xanax/{files[0]}", "r") as ofile:
+                fileOne = json.load(ofile)
+            with open(f"./xanax/{files[1]}", "r") as ofile:
+                fileTwo = json.load(ofile)
+            compared = {}
+            for member in fileOne["members"]:
+                if member not in fileTwo["members"]:
+                    continue
+                xanDifference = abs(fileOne["members"][member]["xantaken"] - fileTwo["members"][member]["xantaken"])
+                odDifference = abs(fileOne["members"][member]["overdoses"] - fileTwo["members"][member]["overdoses"])
+                compared[member] = {'xantaken': xanDifference, 'overdoses': odDifference}
+            jsonInfo = json.dumps(compared, indent=2)
+            with open("tempfile.json", "w+") as ofile:
+                ofile.write(jsonInfo)
+            with open("tempfile.json", "rb") as ofile:
+                await ctx.send(file=discord.File(ofile, 'xanaxinfo.json'))
+            await ctx.send("Would you like me to check if people are meeting reqs for this?\nIf yes, respond to this"
+                           " with how many xanax a day they should be making. If you do not wish for me to compare, "
+                           "ignore this message or respond \"no\".")
 
+            def check(m):
+                if m.author == ctx.author and m.channel == ctx.channel:
+                    return True
+                else:
+                    return False
 
+            try:
+                msg = await self.bot.wait_for('message', check=check, timeout=30)
+            except asyncio.TimeoutError:
+                os.remove("tempfile.json")
+                return
+            else:
+                os.remove("tempfile.json")
+                if msg.content.isdigit():
+                    xanNeeded = int(msg.content)
+                else:
+                    return
+            embed = discord.Embed()
+            for member in compared:
+                daysDiff = abs(fileOne['time'] - fileTwo['time']) // 86400
+                if compared[member]['xantaken'] / daysDiff < xanNeeded:
+                    embed.add_field(name=member, value=f"Xanax: {compared[member]['xantaken']}\n"
+                                                       f"ODs: {compared[member]['overdoses']}", inline=True)
+            await ctx.send(embed=embed)
 
+    @commands.command()
+    async def files(self, ctx, arg1):
+        if arg1 == "list":
+            xanF = []
+            for name in os.listdir("./xanax"):
+                if name.endswith("xanaxinfo.json"):
+                    xanF.append(name)
+            await ctx.send("\n".join(xanF))
+        elif arg1 == "remove":
+            await ctx.send("What file would you like to remove? Respond with the files corresponding number.")
+            sendFiles = []
+            fileIndex = {}
+            i = 1
+            xanF = []
+            for name in os.listdir("./xanax"):
+                if name.endswith("xanaxinfo.json"):
+                    xanF.append(name)
+            for file in xanF:
+                sendFiles.append(f"{i} -> {file}")
+                fileIndex[str(i)] = file
+                i += 1
+            await ctx.send("\n".join(sendFiles))
+
+            def check(m):
+                if m.author == ctx.author and m.channel == ctx.channel:
+                    return True
+                else:
+                    return False
+
+            try:
+                msg = await self.bot.wait_for('message', check=check, timeout=30)
+            except asyncio.TimeoutError:
+                return
+            else:
+                file = fileIndex[msg.content]
+                if msg.content.isdigit is False:
+                    await ctx.send("That is an invalid number.")
+                    return
+                os.remove(f"./xanax/{file}")
+                await ctx.send(f"{file} has been removed")
+        else:
+            await ctx.send("That is not a valid argument")
+
+    @files.error
+    async def files_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send('You must include an argument.')
 
 
 def setup(bot):
