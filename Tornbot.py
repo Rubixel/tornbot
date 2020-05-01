@@ -9,7 +9,7 @@ from functions import userIsAdmin
 
 with open('config.json') as f:
     constants = json.load(f)
-bot = commands.Bot(command_prefix="!")
+bot = commands.Bot(command_prefix="!", case_insensitive=True)
 apiKey = bot_keys.apiKey
 botID = bot_keys.bot_id
 startTime = datetime.datetime.now()

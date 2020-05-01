@@ -38,7 +38,9 @@ def checkFactionNames(s):
     factions = constants["factionNames"]
     for faction in factions:
         if faction.lower() == s.lower():
-            return constants["factionNames"][s]
+            print(faction.lower())
+            print(s.lower())
+            return constants["factionNames"][s.lower()]
     return False
 
 

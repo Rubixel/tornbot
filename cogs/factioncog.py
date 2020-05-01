@@ -69,6 +69,7 @@ class Faction(commands.Cog):
         sendString = "Players online in the past 5 minutes: \n ```"
         for state in onlinerList:
             sendString = (sendString + " " + state + " " + "\n")
+        await asyncio.sleep(3)
         await ctx.send(sendString + f'\nIn total, {onlinerCount} players are online.```')
 
     @onliners.error
@@ -115,6 +116,7 @@ class Faction(commands.Cog):
         sendString = "Players Inactive for 10 hours or more: \n ```"
         for state in inactivePlayers:
             sendString = (sendString + " " + state + " " + "\n")
+        await asyncio.sleep(3)
         await ctx.send(sendString + f"In total, {inactiveCount} players are inactive.```")
 
     @inactives.error
@@ -154,7 +156,8 @@ class Faction(commands.Cog):
             pickedMembers.append(f"{picked[0]} [{picked[1]}]")
             x += 1
         res = ", ".join(pickedMembers)
-        await ctx.send(f"Winner winner chicken dinner! {res} wins a prize from {ctx.author}!")
+        await asyncio.sleep(1)
+        await ctx.send(f"Winner winner chicken dinner! {res} wins a prize from {ctx.author.nick}!")
 
     @WWCD.error
     async def wwcd_error(self, ctx, error):
@@ -162,10 +165,11 @@ class Faction(commands.Cog):
 
     @commands.command()
     async def trackxanax(self, ctx, name=None):
+        if checkCouncilRoles(ctx.author.roles) is False:
+            await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
+            return
         if not name:
             name = time.strftime('%Y-%m-%d', time.localtime(time.time()))
-        if ctx.author.id not in constants["adminUsers"]:
-            await ctx.send("Only a bot administrator can use this command!")
         await ctx.send("Please wait, this will take around a minute.")
         async with aiohttp.ClientSession() as session:
             r = await fetch(session, f'https://api.torn.com/faction/?selections=basic&key={apiKey}')
@@ -188,11 +192,17 @@ class Faction(commands.Cog):
         outf = open(f"./xanax/{name}-xanaxinfo.json", "w")
         outf.write(jsonInfo)
         outf.close()
+        print("tosend")
         with open(f"./xanax/{name}-xanaxinfo.json", "rb") as outf:
-            await ctx.send(file=discord.File(outf, f'{name}-xanaxinfo.json'))
+            print("opened")
+            await ctx.send(f"Here is your report. The file is saved as: \'{name}-xanaxinfo.json\'",
+                           file=discord.File(outf, "xanax_report.json"))
 
     @commands.command()
     async def checkxanax(self, ctx, minimum):
+        if checkCouncilRoles(ctx.author.roles) is False:
+            await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
+            return
         if ctx.author.id not in constants["adminUsers"]:
             await ctx.send("Only a bot administrator can use this command!")
         xanaxFiles = []
@@ -231,11 +241,11 @@ class Faction(commands.Cog):
         with open(f"./xanax/{file}", "r") as ofile:
             previousJson = json.load(ofile)
         previousTime = previousJson["time"]
-        days = round(abs(previousTime - time.time()) / 86400)
-        if days <= 0:
+        days = abs(previousTime - time.time()) / 86400
+        if days < 1:
             await ctx.send("You cannot check a report that was generated less than 24 hours ago. ")
             return
-        await ctx.send(f"Checking members who have a lower than {minimum} xanax/day ratio, across {days} days. "
+        await ctx.send(f"Checking members who have a lower than {minimum} xanax/day ratio, across {round(days,2)} days. "
                        f"\nPlease wait, this will take around a minute.")
         previousCheck = previousJson["members"]
         async with aiohttp.ClientSession() as session:
@@ -251,10 +261,10 @@ class Faction(commands.Cog):
                 r = await fetch(session, f'https://api.torn.com/user/{memberID}?selections=personalstats&key={apiKey}')
             userInfo = json.loads(r)
             xanaxTaken = userInfo["personalstats"]["xantaken"]
-            if xanaxTaken - previousCheck[memberName]["xantaken"] / int(days) < int(minimum):
+            xanaxDifference = xanaxTaken - previousCheck[memberName]['xantaken']
+            if xanaxDifference / int(days) < int(minimum):
                 overdoses = userInfo["personalstats"]["overdosed"] - previousCheck[memberName]["overdoses"]
-                xanaxDifference = xanaxTaken - previousCheck[memberName]['xantaken']
-                belowMin.append([memberName, (xanaxDifference + overdoses * 3) / int(days), overdoses])
+                belowMin.append([memberName, round((xanaxDifference + overdoses * 3) / int(days), 2), overdoses])
             await asyncio.sleep(1)
         belowMin.sort(key=lambda x: x[1])
         embed = discord.Embed()
@@ -269,6 +279,9 @@ class Faction(commands.Cog):
 
     @commands.command()
     async def comparexanax(self, ctx):
+        if checkCouncilRoles(ctx.author.roles) is False:
+            await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
+            return
         xanaxFiles = []
         for name in os.listdir("./xanax"):
             if name.endswith("xanaxinfo.json"):
@@ -285,8 +298,8 @@ class Faction(commands.Cog):
             i += 1
         fn = "\n".join(sendFiles)
         await ctx.send("Here are the availible files to compare: \n" + fn)
-        await ctx.send("Choose two files to compare by using the number to the left of the filename. Seperate the two"
-                       "selections by a command and a space.")
+        await ctx.send("Choose two files to compare by using the number to the left of the filename. Seperate the two "
+                       "selections by a comma and a space.")
 
         def check(m):
             if m.author == ctx.author and m.channel == ctx.channel:
@@ -344,14 +357,17 @@ class Faction(commands.Cog):
                     return
             embed = discord.Embed()
             for member in compared:
-                daysDiff = abs(fileOne['time'] - fileTwo['time']) // 86400
+                daysDiff = abs(fileOne['time'] - fileTwo['time']) / 86400
                 if compared[member]['xantaken'] / daysDiff < xanNeeded:
-                    embed.add_field(name=member, value=f"Xanax: {compared[member]['xantaken']}\n"
+                    embed.add_field(name=member, value=f"Xanax: {round(compared[member]['xantaken'] / daysDiff, 2)}\n"
                                                        f"ODs: {compared[member]['overdoses']}", inline=True)
             await ctx.send(embed=embed)
 
     @commands.command()
     async def files(self, ctx, arg1):
+        if checkCouncilRoles(ctx.author.roles) is False:
+            await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
+            return
         if arg1 == "list":
             xanF = []
             for name in os.listdir("./xanax"):
