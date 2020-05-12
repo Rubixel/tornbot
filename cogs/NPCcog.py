@@ -11,7 +11,7 @@ onReadyRun = False
 npcChannel = ""
 npcReady = {}
 npcEmbeds = {}
-npcNames = ["Duke", "Leslie"]
+npcNames = ["Duke", "Leslie", "Jimmy"]
 npcFourMessages = {}
 for name in npcNames:
     npcFourMessages[name] = None

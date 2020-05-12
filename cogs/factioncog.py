@@ -358,8 +358,10 @@ class Faction(commands.Cog):
             embed = discord.Embed()
             for member in compared:
                 daysDiff = abs(fileOne['time'] - fileTwo['time']) / 86400
+                # todo xan/day using file times
                 if compared[member]['xantaken'] / daysDiff < xanNeeded:
-                    embed.add_field(name=member, value=f"Xanax: {round(compared[member]['xantaken'] / daysDiff, 2)}\n"
+                    embed.add_field(name=member, value=f"Xanax: {compared[member]['xantaken']}\n"
+                                                       f"Xan/Day: {round(compared[member]['xantaken'] / daysDiff, 2)}\n"
                                                        f"ODs: {compared[member]['overdoses']}", inline=True)
             await ctx.send(embed=embed)
 
