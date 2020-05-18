@@ -170,6 +170,9 @@ class Faction(commands.Cog):
             return
         if not name:
             name = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+        if os.path.exists(f"./xanax/{name}-xanaxinfo.json"):
+            await ctx.send("Error, this will overwrite an existing file! Please choose a custom name.")
+            return
         await ctx.send("Please wait, this will take around a minute.")
         async with aiohttp.ClientSession() as session:
             r = await fetch(session, f'https://api.torn.com/faction/?selections=basic&key={apiKey}')
@@ -192,7 +195,6 @@ class Faction(commands.Cog):
         outf = open(f"./xanax/{name}-xanaxinfo.json", "w")
         outf.write(jsonInfo)
         outf.close()
-        print("tosend")
         with open(f"./xanax/{name}-xanaxinfo.json", "rb") as outf:
             print("opened")
             await ctx.send(f"Here is your report. The file is saved as: \'{name}-xanaxinfo.json\'",
@@ -267,10 +269,10 @@ class Faction(commands.Cog):
                 belowMin.append([memberName, round((xanaxDifference + overdoses * 3) / int(days), 2), overdoses])
             await asyncio.sleep(1)
         belowMin.sort(key=lambda x: x[1])
-        embed = discord.Embed()
+        toJoin = []
         for n in belowMin:
-            embed.add_field(name=n[0], value=f"Xanax: {n[1]}\nODs: {n[2]}", inline=True)
-        await ctx.send(embed=embed)
+            toJoin.append(f"{n[0]}, Xan/Day: {n[1]}, ODs: {n[2]}")
+        await ctx.send("\n".join(toJoin))
 
     @checkxanax.error
     async def checkxanax_error(self, ctx, error):
@@ -355,15 +357,13 @@ class Faction(commands.Cog):
                     xanNeeded = int(msg.content)
                 else:
                     return
-            embed = discord.Embed()
+            toJoin = []
             for member in compared:
                 daysDiff = abs(fileOne['time'] - fileTwo['time']) / 86400
-                # todo xan/day using file times
                 if compared[member]['xantaken'] / daysDiff < xanNeeded:
-                    embed.add_field(name=member, value=f"Xanax: {compared[member]['xantaken']}\n"
-                                                       f"Xan/Day: {round(compared[member]['xantaken'] / daysDiff, 2)}\n"
-                                                       f"ODs: {compared[member]['overdoses']}", inline=True)
-            await ctx.send(embed=embed)
+                    toJoin.append(f"{member}, Xan/Day: {round(compared[member]['xantaken'] / daysDiff, 2)}, ODs: "
+                                  f"{compared[member]['overdoses']}")
+            await ctx.send("\n".join(toJoin))
 
     @commands.command()
     async def files(self, ctx, arg1):

@@ -117,6 +117,8 @@ class Npc(commands.Cog):
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
             return
+        else:
+            raise error
 
     @commands.Cog.listener()
     async def on_ready(self):
