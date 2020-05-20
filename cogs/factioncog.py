@@ -164,18 +164,23 @@ class Faction(commands.Cog):
         return
 
     @commands.command()
-    async def trackxanax(self, ctx, name=None):
+    async def trackxanax(self, ctx, faction, name=None):
+        if faction.lower() != "ns1" and faction.lower() != "ns2" and faction.lower() != "ns3":
+            await ctx.send("The faction name must be NS1, NS2, or NS3")
+            return
+        factionID = constants["factionNames"][faction.lower()]
         if checkCouncilRoles(ctx.author.roles) is False:
             await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
             return
         if not name:
             name = time.strftime('%Y-%m-%d', time.localtime(time.time()))
-        if os.path.exists(f"./xanax/{name}-xanaxinfo.json"):
-            await ctx.send("Error, this will overwrite an existing file! Please choose a custom name.")
+        if os.path.exists(f"./xanax/{faction.lower()}-{name}-xanaxinfo.json"):
+            await ctx.send("Error, this will overwrite an existing file! Please choose a custom name. "
+                           "EX: !trackxanax NS2 fileName")
             return
         await ctx.send("Please wait, this will take around a minute.")
         async with aiohttp.ClientSession() as session:
-            r = await fetch(session, f'https://api.torn.com/faction/?selections=basic&key={apiKey}')
+            r = await fetch(session, f'https://api.torn.com/faction/{factionID}?selections=basic&key={apiKey}')
         factionInfo = json.loads(r)
         members = factionInfo["members"]
         memberDict = {}
@@ -189,27 +194,32 @@ class Faction(commands.Cog):
             xanaxTaken = userInfo["personalstats"]["xantaken"]
             overdoses = userInfo["personalstats"]["overdosed"]
             memberDict[memberName] = {"xantaken": xanaxTaken, "overdoses": overdoses}
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
         fullTime = time.strftime('%Y-%m-%d_%H:%M:%S', time.localtime(time.time()))
         jsonInfo = json.dumps({"time": time.time(), "date": fullTime, "members": memberDict}, indent=2)
-        outf = open(f"./xanax/{name}-xanaxinfo.json", "w")
+        outf = open(f"./xanax/{faction.lower()}-{name}-xanaxinfo.json", "w")
         outf.write(jsonInfo)
         outf.close()
-        with open(f"./xanax/{name}-xanaxinfo.json", "rb") as outf:
-            print("opened")
-            await ctx.send(f"Here is your report. The file is saved as: \'{name}-xanaxinfo.json\'",
+        with open(f"./xanax/{faction.lower()}-{name}-xanaxinfo.json", "rb") as outf:
+            await ctx.send(f"Here is your report. The file is saved as: \'{faction.lower()}-{name}-xanaxinfo.json\'",
                            file=discord.File(outf, "xanax_report.json"))
 
+    @trackxanax.error
+    async def trackxanax_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send('You must include which faction! EX: !trackxanax NS2')
+
     @commands.command()
-    async def checkxanax(self, ctx, minimum):
+    async def checkxanax(self, ctx, faction, minimum):
         if checkCouncilRoles(ctx.author.roles) is False:
             await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
             return
-        if ctx.author.id not in constants["adminUsers"]:
-            await ctx.send("Only a bot administrator can use this command!")
+        if faction.lower() != "ns1" and faction.lower() != "ns2" and faction.lower() != "ns3":
+            await ctx.send("The faction name must be NS1, NS2, or NS3")
+            return
         xanaxFiles = []
         for name in os.listdir("./xanax"):
-            if name.endswith("xanaxinfo.json"):
+            if name.endswith("xanaxinfo.json") and name.startswith(faction.lower()):
                 xanaxFiles.append(name)
         if not xanaxFiles:
             await ctx.send("There are no files to compare!")
@@ -280,14 +290,21 @@ class Faction(commands.Cog):
             await ctx.send('You must include a minimum xanax intake!\nEx: !checkxanax 2')
 
     @commands.command()
-    async def comparexanax(self, ctx):
+    async def comparexanax(self, ctx, faction=None):
         if checkCouncilRoles(ctx.author.roles) is False:
             await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
+            return
+        if not faction:
+            await ctx.send('You must include a faction! Ex: !comparexanax NS2')
+            return
+        if faction.lower() != "ns1" and faction.lower() != "ns2" and faction.lower() != "ns3":
+            await ctx.send("The faction name must be NS1, NS2, or NS3")
             return
         xanaxFiles = []
         for name in os.listdir("./xanax"):
             if name.endswith("xanaxinfo.json"):
-                xanaxFiles.append(name)
+                if name.startswith(faction.lower()):
+                    xanaxFiles.append(name)
         if not xanaxFiles:
             await ctx.send("There are no files to compare!")
             return
@@ -301,7 +318,7 @@ class Faction(commands.Cog):
         fn = "\n".join(sendFiles)
         await ctx.send("Here are the availible files to compare: \n" + fn)
         await ctx.send("Choose two files to compare by using the number to the left of the filename. Seperate the two "
-                       "selections by a comma and a space.")
+                       "selections by a space.")
 
         def check(m):
             if m.author == ctx.author and m.channel == ctx.channel:
@@ -315,7 +332,7 @@ class Faction(commands.Cog):
             return
         else:
             files = []
-            choices = msg.content.split(", ")
+            choices = msg.content.split(" ")
             if len(choices) != 2:
                 await ctx.send("There must be only two arguments")
             files.append(fileIndex[choices[0]])
@@ -366,16 +383,27 @@ class Faction(commands.Cog):
             await ctx.send("\n".join(toJoin))
 
     @commands.command()
-    async def files(self, ctx, arg1):
+    async def files(self, ctx, arg1, faction=None):
         if checkCouncilRoles(ctx.author.roles) is False:
             await ctx.author.send("You do not have permissions to use this command: \"" + ctx.message.content + "\"")
             return
         if arg1 == "list":
+            if not faction:
+                pref = ""
+            elif faction.lower() in ["ns1", "ns2", "ns3"]:
+                pref = faction.lower()
+            else:
+                await ctx.send("That faction is invalid")
+                return
             xanF = []
             for name in os.listdir("./xanax"):
                 if name.endswith("xanaxinfo.json"):
-                    xanF.append(name)
-            await ctx.send("\n".join(xanF))
+                    if name.startswith(pref):
+                        xanF.append(name)
+            if not xanF:
+                await ctx.send("There are no files that meet that criteria.")
+            else:
+                await ctx.send("\n".join(xanF))
         elif arg1 == "remove":
             await ctx.send("What file would you like to remove? Respond with the files corresponding number.")
             sendFiles = []

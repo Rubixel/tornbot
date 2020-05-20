@@ -9,7 +9,7 @@
   "romanNumbers": {"0": "In hospital", "1": "I", "2": "II", "3": "III", "4": "IV", "5": "V"},
   "cogNames": ["NPCcog","factioncog", "othercog"],
   "npcImageLinks": {"Duke": "https://profileimages.torn.com/4d661456-1798-ad32-4.png", "Leslie": "https://profileimages.torn.com/4d661456-17bc-2098-15.png", "Jimmy":"https://profileimages.torn.com/4d661456-205b-349e-19.png"},
-  "factionNames": {"nsi":9533,"nsii":11747,"nsiii":12094,"jfk":3241,"cr":16628,"r*":8336,"ibb":2736,"sa":2013,"da":231,"39thx": 16312,"39th": 19,"mnc": 7835,"ftw": 11581},
+  "factionNames": {"ns1":9533,"ns2":11747,"ns3":12094,"nsi":9533,"nsii":11747,"nsiii":12094,"jfk":3241,"cr":16628,"r*":8336,"ibb":2736,"sa":2013,"da":231,"39thx": 16312,"39th": 19,"mnc": 7835,"ftw": 11581},
   "bullyList": ["Hcom", "jukka", "gratify", "ZeroTwo", "Johnny_G", "FidelCashFlow", "STEVE_HOLT", "BOOMER_HOLT", "Rhino", "Rhinko", "LTJELLOMAN", "Bones", "Roxy", "Everyone", "ttyper", "Vicarious", "Stretch", "Karen", "Itself"],
   "lottoFactions": [9533, 11747, 12094],
   "tessa": ["hunting dog", "watchdog", "brown"],
