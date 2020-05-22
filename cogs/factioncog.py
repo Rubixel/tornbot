@@ -194,7 +194,7 @@ class Faction(commands.Cog):
             xanaxTaken = userInfo["personalstats"]["xantaken"]
             overdoses = userInfo["personalstats"]["overdosed"]
             memberDict[memberName] = {"xantaken": xanaxTaken, "overdoses": overdoses}
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1)
         fullTime = time.strftime('%Y-%m-%d_%H:%M:%S', time.localtime(time.time()))
         jsonInfo = json.dumps({"time": time.time(), "date": fullTime, "members": memberDict}, indent=2)
         outf = open(f"./xanax/{faction.lower()}-{name}-xanaxinfo.json", "w")
@@ -217,6 +217,7 @@ class Faction(commands.Cog):
         if faction.lower() != "ns1" and faction.lower() != "ns2" and faction.lower() != "ns3":
             await ctx.send("The faction name must be NS1, NS2, or NS3")
             return
+        factionID = constants["factionNames"][faction.lower()]
         xanaxFiles = []
         for name in os.listdir("./xanax"):
             if name.endswith("xanaxinfo.json") and name.startswith(faction.lower()):
@@ -261,7 +262,7 @@ class Faction(commands.Cog):
                        f"\nPlease wait, this will take around a minute.")
         previousCheck = previousJson["members"]
         async with aiohttp.ClientSession() as session:
-            r = await fetch(session, f'https://api.torn.com/faction/?selections=basic&key={apiKey}')
+            r = await fetch(session, f'https://api.torn.com/faction/{factionID}?selections=basic&key={apiKey}')
         factionInfo = json.loads(r)
         members = factionInfo["members"]
         belowMin = []
@@ -287,7 +288,7 @@ class Faction(commands.Cog):
     @checkxanax.error
     async def checkxanax_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send('You must include a minimum xanax intake!\nEx: !checkxanax 2')
+            await ctx.send('You must include a minimum xanax intake!\nEx: !checkxanax NS2 2')
 
     @commands.command()
     async def comparexanax(self, ctx, faction=None):
