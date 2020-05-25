@@ -1,3 +1,5 @@
+import time
+
 import discord
 from discord.ext import commands, tasks
 import json
@@ -138,6 +140,7 @@ class Npc(commands.Cog):
 
     @tasks.loop(seconds=100)
     async def timer(self):
+        print(time.time())
         await refreshNpcEmbeds()
         print('refreshing')
         await checkNPC()
