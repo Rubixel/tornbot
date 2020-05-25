@@ -139,8 +139,11 @@ class Npc(commands.Cog):
     @tasks.loop(seconds=100)
     async def timer(self):
         await refreshNpcEmbeds()
+        print('refreshing')
         await checkNPC()
+        print("checking")
         await checkNpcAlerts()
+        print("alerts")
 
 
 def setup(bot):
